@@ -587,18 +587,24 @@
 const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
 const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function showDbError(msg){
+  const el = document.getElementById('dbErrorBanner');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+
+let supabaseClient = null;
+try{
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}catch(err){
+  console.error('createClient failed', err);
+  showDbError('Could not set up the database connection: ' + err.message + ' — check SUPABASE_URL and SUPABASE_ANON_KEY in index.html for typos or stray characters. The rest of the app still works, but nothing will save until this is fixed.');
+}
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('sw.js').catch(err=>console.error('SW registration failed', err));
   });
-}
-
-function showDbError(msg){
-  const el = document.getElementById('dbErrorBanner');
-  el.textContent = '⚠️ ' + msg;
-  el.style.display = 'block';
 }
 
 // Catch the #1 cause of "data disappears on reload": the placeholder
@@ -609,23 +615,34 @@ if(SUPABASE_URL.includes('YOUR_SUPABASE') || SUPABASE_ANON_KEY.includes('YOUR_SU
 
 // Shim that mimics the old Claude-artifact window.storage interface exactly,
 // so every load/save function below needs zero changes — only what
-// "storage" points to has changed, not how it's used.
+// "storage" points to has changed, not how it's used. Every method checks
+// supabaseClient exists first, so a broken connection degrades gracefully
+// (functions return null/empty) instead of throwing and freezing the UI.
 window.storage = {
   async get(key){
-    const { data, error } = await supabaseClient.from('kv_store').select('value').eq('key', key).maybeSingle();
-    if(error){ console.error('storage.get error', error); showDbError('Database read failed: ' + error.message); return null; }
-    if(!data) return null;
-    return { key, value: data.value };
+    if(!supabaseClient) return null;
+    try{
+      const { data, error } = await supabaseClient.from('kv_store').select('value').eq('key', key).maybeSingle();
+      if(error){ console.error('storage.get error', error); showDbError('Database read failed: ' + error.message); return null; }
+      if(!data) return null;
+      return { key, value: data.value };
+    }catch(err){ console.error('storage.get threw', err); showDbError('Database read failed: ' + err.message); return null; }
   },
   async set(key, value){
-    const { error } = await supabaseClient.from('kv_store').upsert({ key, value });
-    if(error){ console.error('storage.set error', error); showDbError('Database save failed: ' + error.message + ' — your last change was NOT saved.'); return null; }
-    return { key, value };
+    if(!supabaseClient) return null;
+    try{
+      const { error } = await supabaseClient.from('kv_store').upsert({ key, value });
+      if(error){ console.error('storage.set error', error); showDbError('Database save failed: ' + error.message + ' — your last change was NOT saved.'); return null; }
+      return { key, value };
+    }catch(err){ console.error('storage.set threw', err); showDbError('Database save failed: ' + err.message + ' — your last change was NOT saved.'); return null; }
   },
   async delete(key){
-    const { error } = await supabaseClient.from('kv_store').delete().eq('key', key);
-    if(error){ console.error('storage.delete error', error); showDbError('Database delete failed: ' + error.message); return null; }
-    return { key, deleted: true };
+    if(!supabaseClient) return null;
+    try{
+      const { error } = await supabaseClient.from('kv_store').delete().eq('key', key);
+      if(error){ console.error('storage.delete error', error); showDbError('Database delete failed: ' + error.message); return null; }
+      return { key, deleted: true };
+    }catch(err){ console.error('storage.delete threw', err); showDbError('Database delete failed: ' + err.message); return null; }
   }
 };
 
@@ -633,6 +650,7 @@ window.storage = {
 // user logs anything, so a broken connection is obvious immediately
 // rather than discovered after data has already been "lost".
 (async function testConnection(){
+  if(!supabaseClient) return; // error already shown above
   if(SUPABASE_URL.includes('YOUR_SUPABASE') || SUPABASE_ANON_KEY.includes('YOUR_SUPABASE')) return;
   try{
     const testKey = '__connection_test__';

@@ -238,7 +238,7 @@
     background:var(--surface-2);border-radius:20px 20px 0 0;border-top:1px solid var(--hair-2);
     padding:10px 18px calc(22px + var(--safe-b));
     transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.25,1);
-    max-height:82vh;overflow-y:auto;
+    max-height:82vh;overflow-y:auto;overflow-x:hidden;
   }
   .sheet.show{transform:translateY(0);}
   .sheet .handle{width:36px;height:4px;background:var(--hair-2);border-radius:3px;margin:4px auto 14px;}
@@ -278,25 +278,20 @@
     padding:9px 11px;border-radius:10px;font-size:13.5px;font-family:inherit;width:100%;
   }
   .mergeRow{display:flex;gap:8px;align-items:center;margin-top:10px;}
+  .mergeRow select{flex:1;min-width:0;}
   .mergeRow span{color:var(--dim);flex-shrink:0;}
   .linklike{color:var(--alarm);font-size:13px;text-decoration:underline;cursor:pointer;display:inline-block;margin-top:18px;}
   .datafoot{color:var(--dim-2);font-size:11.5px;margin-top:14px;line-height:1.5;}
 
   /* ---------- period toggle + trend chart ---------- */
   .periodRow{display:flex;gap:8px;margin-bottom:14px;}
-  .periodRow .chip{flex:1;text-align:center;}
+  .periodRow .chip{flex:1;text-align:center;min-width:0;}
   .trendchart{display:flex;align-items:flex-end;gap:6px;height:78px;margin-top:4px;}
   .trendchart .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
   .trendchart .bar .fill{width:100%;max-width:26px;background:var(--surface-3);border-radius:4px 4px 2px 2px;position:relative;}
   .trendchart .bar .fill.cur{background:var(--ember);}
-  .trendchart .bar .lbl{font-size:9.5px;color:var(--dim-2);}
-  .compareCard{
-    display:flex;justify-content:space-between;align-items:center;cursor:pointer;
-    background:var(--surface-2);border:1px solid var(--hair);border-radius:14px;padding:16px;margin-bottom:14px;
-  }
-  .compareCard .t{font-weight:700;font-size:14.5px;}
-  .compareCard .s{font-size:12.5px;color:var(--dim);margin-top:2px;}
-  .compareCard svg{width:18px;height:18px;color:var(--dim);flex-shrink:0;}
+  .trendchart .bar .lbl{font-size:9.5px;color:var(--dim-2);text-align:center;line-height:1.3;}
+  .trendchart .bar .lblsub{font-size:8px;color:var(--dim-2);text-transform:uppercase;letter-spacing:.03em;}
 
   /* ---------- muscles tab ---------- */
   .weekNav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
@@ -318,23 +313,14 @@
   .musclebar .mark{position:absolute;top:-3px;width:2px;height:16px;background:var(--dim-2);}
   .marklbl{position:absolute;top:0;font-size:9px;color:var(--dim-2);transform:translateX(-50%);white-space:nowrap;}
 
-  /* ---------- standards / compare ---------- */
+  /* ---------- shared form rows (Run/Weight logging) ---------- */
   .profileRow{display:flex;gap:8px;margin-bottom:16px;}
-  .profileField{flex:1;}
+  .profileField{flex:1;min-width:0;}
   .profileField label{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;}
   .profileField input{
     width:100%;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);
     padding:9px 10px;border-radius:10px;font-size:14px;font-family:inherit;
   }
-  .liftGauge{margin-bottom:20px;}
-  .liftGauge .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
-  .liftGauge .head .name{font-weight:700;font-size:14.5px;}
-  .liftGauge .head .val{font-size:13px;color:var(--dim);}
-  .gaugetrack{position:relative;height:8px;background:var(--surface-3);border-radius:5px;margin-bottom:6px;}
-  .gaugetrack .fill{position:absolute;left:0;top:0;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--dim-2),var(--ember));}
-  .gaugetrack .dot{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--chalk);border:3px solid var(--ember);transform:translate(-50%,-50%);}
-  .gaugelabels{display:flex;justify-content:space-between;font-size:9.5px;color:var(--dim-2);}
-  .lvlbadge{font-size:11px;font-weight:700;color:var(--ember);}
 
   /* ---------- routines ---------- */
   .routineItem{
@@ -349,31 +335,37 @@
     background:none;border:none;color:var(--dim);cursor:pointer;padding:4px;
   }
   .routineItem .actions button.danger{color:var(--alarm);}
-  .exerciseRow{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
-  .exerciseRow input[type="text"]{flex:2;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);padding:9px 11px;border-radius:9px;font-size:13.5px;font-family:inherit;}
-  .exerciseRow input[type="number"]{width:56px;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);padding:9px 6px;border-radius:9px;font-size:13.5px;font-family:inherit;text-align:center;}
+  .exerciseRow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;}
+  .exerciseRow input[type="text"]{flex:1 1 100%;min-width:0;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);padding:9px 11px;border-radius:9px;font-size:13.5px;font-family:inherit;}
+  .exerciseRow input[type="number"]{width:52px;min-width:0;flex-shrink:0;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);padding:9px 4px;border-radius:9px;font-size:13.5px;font-family:inherit;text-align:center;}
+  .exerciseRow select.reGrip{flex-shrink:0;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);padding:8px 4px;border-radius:9px;font-size:12px;font-family:inherit;max-width:88px;}
   .rmBtn{background:none;border:none;color:var(--dim-2);cursor:pointer;flex-shrink:0;padding:4px;}
   .buildExGroup{margin-bottom:20px;}
   .buildExGroup .exHead{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
-  .buildSetRow{display:flex;gap:8px;align-items:center;margin-bottom:7px;}
-  .buildSetRow.uni{align-items:center;flex-wrap:nowrap;}
-  .uniSide{display:flex;align-items:center;gap:4px;flex:1;}
-  .uniSide .sideLbl{font-size:10.5px;color:var(--dim-2);width:12px;flex-shrink:0;font-weight:700;}
+  .buildSetRow{display:flex;gap:6px;align-items:center;margin-bottom:7px;min-width:0;}
+  .singleFields{display:flex;gap:6px;flex:1;min-width:0;}
+  .singleFields input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);padding:9px 8px;border-radius:9px;font-size:13.5px;font-family:inherit;}
+  .uniFields{display:none;gap:6px;flex:1;min-width:0;}
+  .buildSetRow.uni .singleFields{display:none;}
+  .buildSetRow.uni .uniFields{display:flex;}
+  .uniSide{display:flex;align-items:center;gap:3px;flex:1;min-width:0;}
+  .uniSide .sideLbl{font-size:10.5px;color:var(--dim-2);width:10px;flex-shrink:0;font-weight:700;}
+  .uniSide input{min-width:0;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);padding:8px 6px;border-radius:9px;font-size:12.5px;font-family:inherit;flex:1;}
   .uniLabel{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim);flex-shrink:0;white-space:nowrap;padding:0 4px;}
   .uniLabel input{width:auto;flex:none;}
   .uniTag{font-size:9.5px;color:var(--brass);background:rgba(217,164,65,.15);padding:2px 6px;border-radius:8px;margin-left:6px;font-weight:700;text-transform:none;}
   .buildSetRow.warmup{opacity:0.65;}
-  .buildSetRow .setno{width:20px;font-size:11.5px;color:var(--dim-2);flex-shrink:0;}
-  .buildSetRow input{flex:1;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);padding:9px 10px;border-radius:9px;font-size:13.5px;font-family:inherit;}
-  .warmupToggle{
-    width:26px;height:26px;flex-shrink:0;border-radius:50%;border:1px solid var(--hair-2);
-    background:var(--surface);color:var(--dim-2);font-size:12px;font-weight:700;cursor:pointer;
+  .buildSetRow .setno{width:16px;font-size:11.5px;color:var(--dim-2);flex-shrink:0;}
+  .warmupToggle, .uniToggle{
+    width:24px;height:24px;flex-shrink:0;border-radius:50%;border:1px solid var(--hair-2);
+    background:var(--surface);color:var(--dim-2);font-size:11px;font-weight:700;cursor:pointer;padding:0;
   }
   .buildSetRow.warmup .warmupToggle{background:rgba(217,164,65,.18);color:var(--brass);border-color:var(--brass);}
+  .buildSetRow.uni .uniToggle{background:rgba(255,90,44,.18);color:var(--ember);border-color:var(--ember);font-size:9px;}
   .lastTimeHint{font-size:12px;color:var(--dim);margin:-4px 0 10px;}
   .buildAddSetBtn{background:none;border:none;color:var(--ember);font-size:12.5px;font-weight:600;cursor:pointer;padding:2px 0;}
   .buildAddExRow{display:flex;gap:8px;margin-top:4px;}
-  .buildAddExRow input{flex:1;}
+  .buildAddExRow input{flex:1;min-width:0;}
 
   @media (prefers-reduced-motion:reduce){
     *{animation-duration:.01ms !important;transition-duration:.01ms !important;}
@@ -476,7 +468,7 @@
       <div class="profileField"><label>Date</label><input type="date" id="buildDate"></div>
     </div>
     <button class="btn ghost" id="buildStartBtn" style="width:100%;">Start</button>
-    <div id="buildForm" style="margin-top:14px;"></div>
+    <div id="buildForm" style="margin-top:14px;overflow-x:hidden;min-width:0;"></div>
     <button class="btn primary" id="buildSaveBtn" style="width:100%;margin-top:14px;display:none;">Save session</button>
     <div class="toast" id="buildMsg"></div>
   </div>
@@ -574,26 +566,6 @@
   <div class="divider"></div>
   <p class="datafoot" id="dataFooter"></p>
   <span class="linklike" id="resetLink">Clear all stored data</span>
-</div>
-
-<!-- ---------- standards / compare sheet ---------- -->
-<div class="scrim" id="scrimStd"></div>
-<div class="sheet" id="sheetStd">
-  <div class="handle"></div>
-  <button class="iconbtn sheet-close" id="closeStd" style="position:absolute;top:14px;right:16px;">
-    <svg class="icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-  </button>
-  <h3>How you compare</h3>
-  <p class="hint">Rough population strength standards by bodyweight — wide individual variance, take as a compass, not a target.</p>
-
-  <div class="profileRow">
-    <div class="profileField"><label>Height (cm)</label><input type="number" id="profHeight" inputmode="decimal"></div>
-    <div class="profileField"><label>Weight (kg)</label><input type="number" id="profWeight" inputmode="decimal"></div>
-    <div class="profileField"><label>Age</label><input type="number" id="profAge" inputmode="numeric"></div>
-  </div>
-
-  <div id="liftGauges"></div>
-  <p class="hint" style="margin-top:4px;">Estimated from your best-ever top set per lift (Epley formula), not a true tested 1RM. Standards assume free-weight barbell lifts — machine or assisted variants (shown under each gauge) usually let you move more load, so treat those readings as optimistic. Standards also don't account for limb length or training age.</p>
 </div>
 
 <script>
@@ -920,14 +892,28 @@ document.getElementById('fabLog').addEventListener('click', ()=>{
   document.getElementById('bwDate').value = today;
   document.getElementById('buildDate').value = today;
   openSheet('sheetLog','scrimLog');
+
+  const draft = loadDraftLocal();
+  if(draft && draft.groups && draft.groups.length){
+    document.querySelector('#logModeChips .chip[data-mode="session"]').click();
+    restoreDraftIntoForm(draft);
+    const msgEl = document.getElementById('buildMsg');
+    const mins = Math.round((Date.now()-draft.savedAt)/60000);
+    toastEl(msgEl, true, `Resumed your unsaved session from ${mins<1?'just now':mins+' min ago'}. `);
+    msgEl.insertAdjacentHTML('beforeend', `<span class="linklike" id="discardDraftBtn" style="margin:0 0 0 6px;">Discard instead</span>`);
+    document.getElementById('discardDraftBtn').onclick = ()=>{
+      clearDraftLocal();
+      document.getElementById('buildForm').innerHTML = '';
+      document.getElementById('buildSaveBtn').style.display = 'none';
+      msgEl.className = 'toast';
+    };
+  }
 });
 document.getElementById('closeLog').addEventListener('click', ()=>closeSheet('sheetLog','scrimLog'));
 document.getElementById('scrimLog').addEventListener('click', ()=>closeSheet('sheetLog','scrimLog'));
 document.getElementById('dataBtn').addEventListener('click', ()=>openSheet('sheetData','scrimData'));
 document.getElementById('closeData').addEventListener('click', ()=>closeSheet('sheetData','scrimData'));
 document.getElementById('scrimData').addEventListener('click', ()=>closeSheet('sheetData','scrimData'));
-document.getElementById('closeStd').addEventListener('click', ()=>closeSheet('sheetStd','scrimStd'));
-document.getElementById('scrimStd').addEventListener('click', ()=>closeSheet('sheetStd','scrimStd'));
 
 document.querySelectorAll('#logModeChips .chip').forEach(chip=>{
   chip.addEventListener('click', ()=>{
@@ -1066,11 +1052,15 @@ function populateRoutineSelect(){
 
 let editingRoutineId = null;
 
-function exerciseRowHtml(name='', targetSets=3, unilateral=false){
+const GRIP_OPTIONS = ['None','Wide','Medium','Close'];
+function exerciseRowHtml(name='', targetSets=3, unilateral=false, grip='None'){
   return `
     <div class="exerciseRow">
       <input type="text" class="reName" value="${name.replace(/"/g,'&quot;')}" placeholder="Exercise name">
       <input type="number" class="reSets" value="${targetSets}" min="1" max="10" title="Target sets">
+      <select class="reGrip" title="Default grip">
+        ${GRIP_OPTIONS.map(g=>`<option value="${g}" ${g===grip?'selected':''}>${g}</option>`).join('')}
+      </select>
       <label class="uniLabel" title="Logged per side (single arm/leg)"><input type="checkbox" class="reUnilateral" ${unilateral?'checked':''}> 1side</label>
       <button class="rmBtn rmExerciseRow" aria-label="Remove"><svg class="icon" style="width:16px;height:16px;" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>`;
@@ -1081,7 +1071,7 @@ function openRoutineEditor(routine){
   document.getElementById('routineNameInput').value = routine ? routine.name : '';
   const rows = document.getElementById('routineExerciseRows');
   rows.innerHTML = routine
-    ? routine.exercises.map(e=>exerciseRowHtml(e.name, e.targetSets, e.unilateral)).join('')
+    ? routine.exercises.map(e=>exerciseRowHtml(e.name, e.targetSets, e.unilateral, e.grip)).join('')
     : exerciseRowHtml();
   document.getElementById('routineEditor').style.display = 'block';
   document.getElementById('routineMsg').className = 'toast';
@@ -1105,7 +1095,8 @@ document.getElementById('saveRoutineBtn').addEventListener('click', async ()=>{
   const exercises = Array.from(document.querySelectorAll('#routineExerciseRows .exerciseRow')).map(row=>({
     name: row.querySelector('.reName').value.trim(),
     targetSets: Math.max(1, parseInt(row.querySelector('.reSets').value,10)||3),
-    unilateral: row.querySelector('.reUnilateral').checked
+    unilateral: row.querySelector('.reUnilateral').checked,
+    grip: row.querySelector('.reGrip').value
   })).filter(e=>e.name);
   if(!exercises.length){ toastEl(msgEl,false,'Add at least one exercise.'); return; }
 
@@ -1140,10 +1131,14 @@ document.getElementById('routineList').addEventListener('click', e=>{
 ============================================================ */
 
 function buildSetRowHtml(n, isWarmup, unilateral){
-  if(unilateral){
-    return `
-      <div class="buildSetRow uni${isWarmup?' warmup':''}" data-warmup="${isWarmup?'1':'0'}" data-unilateral="1">
-        <span class="setno">${n}</span>
+  return `
+    <div class="buildSetRow${unilateral?' uni':''}${isWarmup?' warmup':''}" data-warmup="${isWarmup?'1':'0'}" data-unilateral="${unilateral?'1':'0'}">
+      <span class="setno">${n}</span>
+      <div class="singleFields">
+        <input type="number" class="bsKg" placeholder="kg" inputmode="decimal" step="0.5">
+        <input type="number" class="bsReps" placeholder="reps" inputmode="numeric">
+      </div>
+      <div class="uniFields">
         <div class="uniSide">
           <span class="sideLbl">L</span>
           <input type="number" class="bsKg bsKgL" placeholder="kg" inputmode="decimal" step="0.5">
@@ -1154,36 +1149,139 @@ function buildSetRowHtml(n, isWarmup, unilateral){
           <input type="number" class="bsKg bsKgR" placeholder="kg" inputmode="decimal" step="0.5">
           <input type="number" class="bsReps bsRepsR" placeholder="reps" inputmode="numeric">
         </div>
-        <button class="warmupToggle" type="button" title="Mark as warm-up (excluded from MEV/MAV and PRs)">${isWarmup?'W':'·'}</button>
-        <button class="rmBtn bsRemoveBtn" type="button" aria-label="Remove set"><svg class="icon" style="width:15px;height:15px;" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-      </div>`;
-  }
-  return `
-    <div class="buildSetRow${isWarmup?' warmup':''}" data-warmup="${isWarmup?'1':'0'}">
-      <span class="setno">${n}</span>
-      <input type="number" class="bsKg" placeholder="kg" inputmode="decimal" step="0.5">
-      <input type="number" class="bsReps" placeholder="reps" inputmode="numeric">
+      </div>
+      <button class="uniToggle" type="button" title="Unilateral — logged per side">${unilateral?'L/R':'⇄'}</button>
       <button class="warmupToggle" type="button" title="Mark as warm-up (excluded from MEV/MAV and PRs)">${isWarmup?'W':'·'}</button>
       <button class="rmBtn bsRemoveBtn" type="button" aria-label="Remove set"><svg class="icon" style="width:15px;height:15px;" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>`;
 }
-function lastTimeHint(name){
-  const occs = DATA.exerciseMap && DATA.exerciseMap.get(name);
-  if(!occs || !occs.length) return '';
-  const last = occs[occs.length-1];
-  return `<div class="lastTimeHint">Last time: ${last.topSet.kg}kg × ${last.topSet.reps} <span style="color:var(--dim-2);">(${fmtDate(last.date)})</span></div>`;
+function effectiveExerciseName(baseName, grip){
+  return (grip && grip!=='None') ? `${baseName} (${grip} Grip)` : baseName;
 }
-function buildExGroupHtml(name, targetSets, extraWarmups, unilateral){
+// find the most recent set per side (Left / Right / no-side) across this
+// exercise's history, so unilateral progress is never ambiguous about which arm/leg it's from
+function lastTimeBySide(name){
+  const occs = DATA.exerciseMap && DATA.exerciseMap.get(name);
+  if(!occs || !occs.length) return {};
+  const found = {};
+  for(let i=occs.length-1; i>=0 && (!found.L || !found.R || !found.none); i--){
+    const bestPerSide = {};
+    for(const st of occs[i].sets){
+      const key = st.side || 'none';
+      const e1 = epley(st.kg, st.reps);
+      if(!bestPerSide[key] || e1 > bestPerSide[key].e1) bestPerSide[key] = {kg:st.kg, reps:st.reps, e1};
+    }
+    for(const key of ['L','R','none']){
+      if(!found[key] && bestPerSide[key]) found[key] = {...bestPerSide[key], date:occs[i].date};
+    }
+  }
+  return found;
+}
+function lastTimeHint(name){
+  const bySide = lastTimeBySide(name);
+  if(!bySide.L && !bySide.R && !bySide.none) return 'No history yet for this grip.';
+  if(bySide.L || bySide.R){
+    const line = (label, s) => s
+      ? `<b>${label}:</b> ${s.kg}kg × ${s.reps} <span style="color:var(--dim-2);">(${fmtDate(s.date)})</span>`
+      : `<b>${label}:</b> <span style="color:var(--dim-2);">no history</span>`;
+    return `Last time — ${line('L', bySide.L)} &nbsp; ${line('R', bySide.R)}`;
+  }
+  const s = bySide.none;
+  return `Last time: ${s.kg}kg × ${s.reps} <span style="color:var(--dim-2);">(${fmtDate(s.date)})</span>`;
+}
+let gripHintCounter = 0;
+function buildExGroupShellHtml(name, unilateral, grip){
+  grip = grip || 'None';
+  const hintId = 'gripHint_'+(gripHintCounter++);
+  return `
+    <div class="buildExGroup" data-exercise="${name.replace(/"/g,'&quot;')}" data-unilateral="${unilateral?'1':'0'}" data-grip="${grip}">
+      <div class="exHead">${name}${unilateral?' <span class="uniTag">1side</span>':''}<button class="rmBtn rmExGroupBtn" type="button" aria-label="Remove exercise"><svg class="icon" style="width:16px;height:16px;" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6h12Z"/></svg></button></div>
+      <div class="chipRow gripChipRow">
+        ${GRIP_OPTIONS.map(g=>`<div class="chip gripChip${g===grip?' active':''}" data-grip-choice="${g}">${g==='None'?'Standard':g}</div>`).join('')}
+      </div>
+      <div class="lastTimeHint" id="${hintId}">${lastTimeHint(effectiveExerciseName(name, grip))}</div>
+      <div class="buildSetList"></div>
+      <button class="buildAddSetBtn" type="button">+ Add set</button>
+    </div>`;
+}
+function buildExGroupHtml(name, targetSets, extraWarmups, unilateral, grip){
   const totalRows = targetSets + extraWarmups;
   let rows = '';
   for(let i=1;i<=totalRows;i++) rows += buildSetRowHtml(i, i<=extraWarmups, unilateral);
-  return `
-    <div class="buildExGroup" data-exercise="${name.replace(/"/g,'&quot;')}" data-unilateral="${unilateral?'1':'0'}">
-      <div class="exHead">${name}${unilateral?' <span class="uniTag">1side</span>':''}<button class="rmBtn rmExGroupBtn" type="button" aria-label="Remove exercise"><svg class="icon" style="width:16px;height:16px;" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6h12Z"/></svg></button></div>
-      ${lastTimeHint(name)}
-      <div class="buildSetList">${rows}</div>
-      <button class="buildAddSetBtn" type="button">+ Add set</button>
+  const shell = buildExGroupShellHtml(name, unilateral, grip);
+  return shell.replace('<div class="buildSetList"></div>', `<div class="buildSetList">${rows}</div>`);
+}
+
+/* ---- draft autosave: survives closing the app mid-session ---- */
+const DRAFT_KEY = 'rr-draft-v1';
+function saveDraftLocal(){
+  try{
+    const groups = Array.from(document.querySelectorAll('#buildForm .buildExGroup')).map(group=>{
+      const sets = Array.from(group.querySelectorAll('.buildSetRow')).map(row=>{
+        const unilateral = row.dataset.unilateral==='1';
+        if(unilateral){
+          return {
+            unilateral, isWarmup: row.dataset.warmup==='1',
+            kgL: row.querySelector('.bsKgL').value, repsL: row.querySelector('.bsRepsL').value,
+            kgR: row.querySelector('.bsKgR').value, repsR: row.querySelector('.bsRepsR').value
+          };
+        }
+        return { unilateral, isWarmup: row.dataset.warmup==='1', kg: row.querySelector('.bsKg').value, reps: row.querySelector('.bsReps').value };
+      });
+      return { exercise: group.dataset.exercise, grip: group.dataset.grip, sets };
+    });
+    if(!groups.length){ localStorage.removeItem(DRAFT_KEY); return; }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      routineId: document.getElementById('buildRoutineSelect').value,
+      date: document.getElementById('buildDate').value,
+      groups, savedAt: Date.now()
+    }));
+  }catch(e){ console.error('draft save failed', e); }
+}
+function clearDraftLocal(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} }
+function loadDraftLocal(){
+  try{
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function restoreDraftIntoForm(draft){
+  const form = document.getElementById('buildForm');
+  const sel = document.getElementById('buildRoutineSelect');
+  if([...sel.options].some(o=>o.value===draft.routineId)) sel.value = draft.routineId;
+  document.getElementById('buildDate').value = draft.date;
+
+  const freestyleAddRow = `
+    <div class="buildAddExRow">
+      <input type="text" id="freestyleExName" placeholder="Add exercise">
+      <button class="btn ghost" id="freestyleAddExBtn">Add</button>
     </div>`;
+  form.innerHTML = draft.groups.map(g=>buildExGroupShellHtml(g.exercise, false, g.grip)).join('') + freestyleAddRow;
+
+  const groupEls = form.querySelectorAll('.buildExGroup');
+  draft.groups.forEach((g,gi)=>{
+    const groupEl = groupEls[gi];
+    const list = groupEl.querySelector('.buildSetList');
+    g.sets.forEach((s,i)=>{
+      list.insertAdjacentHTML('beforeend', buildSetRowHtml(i+1, s.isWarmup, s.unilateral));
+      const row = list.lastElementChild;
+      if(s.unilateral){
+        row.querySelector('.bsKgL').value = s.kgL||''; row.querySelector('.bsRepsL').value = s.repsL||'';
+        row.querySelector('.bsKgR').value = s.kgR||''; row.querySelector('.bsRepsR').value = s.repsR||'';
+      } else {
+        row.querySelector('.bsKg').value = s.kg||''; row.querySelector('.bsReps').value = s.reps||'';
+      }
+    });
+  });
+
+  document.getElementById('freestyleAddExBtn').onclick = ()=>{
+    const name = document.getElementById('freestyleExName').value.trim();
+    if(!name) return;
+    document.getElementById('freestyleExName').value='';
+    document.getElementById('freestyleAddExBtn').closest('.buildAddExRow').insertAdjacentHTML('beforebegin', buildExGroupHtml(name, 3, 0, false, 'None'));
+    saveDraftLocal();
+  };
+  document.getElementById('buildSaveBtn').style.display = 'block';
 }
 
 function renumberSetRows(list){
@@ -1198,34 +1296,48 @@ document.getElementById('buildStartBtn').addEventListener('click', ()=>{
   const freestyleAddRow = `
     <div class="buildAddExRow">
       <input type="text" id="freestyleExName" placeholder="Add exercise">
-      <label class="uniLabel"><input type="checkbox" id="freestyleUnilateral"> 1side</label>
       <button class="btn ghost" id="freestyleAddExBtn">Add</button>
     </div>`;
   if(routineId==='__freestyle'){
     form.innerHTML = freestyleAddRow;
   } else {
     const routine = ROUTINES.find(r=>r.id===routineId);
-    form.innerHTML = routine.exercises.map((e,i)=>buildExGroupHtml(e.name, e.targetSets, i===0?2:0, e.unilateral)).join('')
+    form.innerHTML = routine.exercises.map((e,i)=>buildExGroupHtml(e.name, e.targetSets, i===0?2:0, e.unilateral, e.grip)).join('')
       + freestyleAddRow;
   }
   document.getElementById('freestyleAddExBtn').onclick = ()=>{
     const name = document.getElementById('freestyleExName').value.trim();
     if(!name) return;
-    const uni = document.getElementById('freestyleUnilateral').checked;
     document.getElementById('freestyleExName').value='';
-    document.getElementById('freestyleUnilateral').checked=false;
-    document.getElementById('freestyleAddExBtn').closest('.buildAddExRow').insertAdjacentHTML('beforebegin', buildExGroupHtml(name, 3, 0, uni));
+    document.getElementById('freestyleAddExBtn').closest('.buildAddExRow').insertAdjacentHTML('beforebegin', buildExGroupHtml(name, 3, 0, false, 'None'));
+    saveDraftLocal();
   };
   document.getElementById('buildSaveBtn').style.display = 'block';
+  saveDraftLocal();
 });
 
 document.getElementById('buildForm').addEventListener('click', e=>{
+  const gripChip = e.target.closest('.gripChip');
+  if(gripChip){
+    const group = gripChip.closest('.buildExGroup');
+    const newGrip = gripChip.dataset.gripChoice;
+    group.dataset.grip = newGrip;
+    group.querySelectorAll('.gripChip').forEach(c=>c.classList.toggle('active', c.dataset.gripChoice===newGrip));
+    const hintEl = group.querySelector('.lastTimeHint');
+    if(hintEl) hintEl.innerHTML = lastTimeHint(effectiveExerciseName(group.dataset.exercise, newGrip));
+    saveDraftLocal();
+    return;
+  }
   const addBtn = e.target.closest('.buildAddSetBtn');
   if(addBtn){
     const group = addBtn.closest('.buildExGroup');
     const list = group.querySelector('.buildSetList');
-    const n = list.querySelectorAll('.buildSetRow').length + 1;
-    list.insertAdjacentHTML('beforeend', buildSetRowHtml(n, false, group.dataset.unilateral==='1'));
+    const existingRows = list.querySelectorAll('.buildSetRow');
+    const n = existingRows.length + 1;
+    const lastRow = existingRows[existingRows.length-1];
+    const inheritUni = lastRow ? lastRow.dataset.unilateral==='1' : (group.dataset.unilateral==='1');
+    list.insertAdjacentHTML('beforeend', buildSetRowHtml(n, false, inheritUni));
+    saveDraftLocal();
     return;
   }
   const rmSetBtn = e.target.closest('.bsRemoveBtn');
@@ -1239,11 +1351,13 @@ document.getElementById('buildForm').addEventListener('click', e=>{
       row.remove();
       renumberSetRows(list);
     }
+    saveDraftLocal();
     return;
   }
   const rmExBtn = e.target.closest('.rmExGroupBtn');
   if(rmExBtn){
     rmExBtn.closest('.buildExGroup').remove();
+    saveDraftLocal();
     return;
   }
   const warmBtn = e.target.closest('.warmupToggle');
@@ -1253,8 +1367,34 @@ document.getElementById('buildForm').addEventListener('click', e=>{
     row.dataset.warmup = isNowWarmup ? '1' : '0';
     row.classList.toggle('warmup', isNowWarmup);
     warmBtn.textContent = isNowWarmup ? 'W' : '·';
+    saveDraftLocal();
     return;
   }
+  const uniBtn = e.target.closest('.uniToggle');
+  if(uniBtn){
+    const row = uniBtn.closest('.buildSetRow');
+    const isNowUni = row.dataset.unilateral !== '1';
+    row.dataset.unilateral = isNowUni ? '1' : '0';
+    row.classList.toggle('uni', isNowUni);
+    uniBtn.textContent = isNowUni ? 'L/R' : '⇄';
+    // carry values across so switching modes mid-entry doesn't lose what's typed
+    if(isNowUni){
+      const kg = row.querySelector('.bsKg:not(.bsKgL):not(.bsKgR)').value;
+      const reps = row.querySelector('.bsReps:not(.bsRepsL):not(.bsRepsR)').value;
+      if(kg){ row.querySelector('.bsKgL').value = kg; row.querySelector('.bsKgR').value = kg; }
+      if(reps){ row.querySelector('.bsRepsL').value = reps; row.querySelector('.bsRepsR').value = reps; }
+    } else {
+      const kgL = row.querySelector('.bsKgL').value;
+      const repsL = row.querySelector('.bsRepsL').value;
+      if(kgL) row.querySelector('.bsKg:not(.bsKgL):not(.bsKgR)').value = kgL;
+      if(repsL) row.querySelector('.bsReps:not(.bsRepsL):not(.bsRepsR)').value = repsL;
+    }
+    saveDraftLocal();
+    return;
+  }
+});
+document.getElementById('buildForm').addEventListener('input', e=>{
+  if(e.target.matches('.bsKg, .bsReps')) saveDraftLocal();
 });
 
 document.getElementById('buildSaveBtn').addEventListener('click', async ()=>{
@@ -1270,10 +1410,10 @@ document.getElementById('buildSaveBtn').addEventListener('click', async ()=>{
                      // sets (very common — e.g. 3x10 at the same top weight)
                      // don't collide on date+exercise+reps+kg and silently vanish
   document.querySelectorAll('#buildForm .buildExGroup').forEach(group=>{
-    const exercise = group.dataset.exercise;
-    const isUni = group.dataset.unilateral === '1';
+    const exercise = effectiveExerciseName(group.dataset.exercise, group.dataset.grip);
     group.querySelectorAll('.buildSetRow').forEach(row=>{
       const isWarmup = row.dataset.warmup === '1';
+      const isUni = row.dataset.unilateral === '1';
       if(isUni){
         const kgL = parseFloat(row.querySelector('.bsKgL').value);
         const repsL = parseInt(row.querySelector('.bsRepsL').value,10);
@@ -1301,6 +1441,7 @@ document.getElementById('buildSaveBtn').addEventListener('click', async ()=>{
   await saveStoredRows(merged);
   toastEl(msgEl,true,`Logged ${added} set${added!==1?'s':''} for ${routineName}.`);
   run(merged);
+  clearDraftLocal();
   document.getElementById('buildForm').innerHTML = '';
   document.getElementById('buildSaveBtn').style.display = 'none';
   setTimeout(()=>closeSheet('sheetLog','scrimLog'), 900);
@@ -1362,15 +1503,13 @@ document.getElementById('exportJsonBtn').addEventListener('click', async ()=>{
   const rows = await loadStoredRows();
   const runs = await loadRuns();
   const bw = await loadBW();
-  const profile = await loadProfile();
   const routines = await loadRoutines();
   const backup = {
     exportedAt: new Date().toISOString(),
     sessions: rows.map(r=>({...r, date:r.date.toISOString()})),
     runs: runs.map(r=>({...r, date:r.date.toISOString()})),
     bodyweight: bw.map(r=>({...r, date:r.date.toISOString()})),
-    routines,
-    profile
+    routines
   };
   downloadBlob(JSON.stringify(backup, null, 2), `rack-read-backup-${new Date().toISOString().slice(0,10)}.json`, 'application/json');
 });
@@ -1630,13 +1769,8 @@ function renderOverviewForPeriod(period){
     </div>
 
     <div class="card">
-      <p class="eyebrow">Trend — last 8 ${periodWord}s</p>
+      <p class="eyebrow">Total volume — last 8 ${periodWord}s <span style="color:var(--dim-2);font-weight:400;text-transform:none;letter-spacing:0;">(orange = current)</span></p>
       ${trend}
-    </div>
-
-    <div class="compareCard" id="compareCardBtn">
-      <div><div class="t">How you compare</div><div class="s">Your lifts vs population strength standards</div></div>
-      <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
 
     <h2 class="section">PRs this ${periodWord} <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--dim-2);">— same rep range only</span></h2>
@@ -1654,7 +1788,6 @@ function renderOverviewForPeriod(period){
   document.querySelectorAll('#periodChips .chip').forEach(c=>{
     c.onclick = ()=>renderOverviewForPeriod(c.dataset.period);
   });
-  document.getElementById('compareCardBtn').onclick = ()=>{ openSheet('sheetStd','scrimStd'); renderStandards(); };
 }
 
 function renderBWCard(bwChange, periodWord){
@@ -1707,17 +1840,17 @@ function renderTrendChart(period, lastDate){
     const {start,end} = getPeriodBounds(period, lastDate, i);
     const vol = sessions.filter(s=>s.date>=start && s.date<end)
       .reduce((sum,s)=>sum+s.rows.reduce((a,r)=>a+r.kg*r.reps,0),0);
-    let lbl;
-    if(period==='week') lbl = start.toLocaleDateString(undefined,{day:'numeric'});
-    else if(period==='month') lbl = start.toLocaleDateString(undefined,{month:'narrow'});
-    else lbl = String(start.getFullYear()).slice(2);
-    buckets.push({vol, lbl, cur:i===0});
+    let lbl, sub='';
+    if(period==='week'){ lbl = start.getDate(); sub = start.toLocaleDateString(undefined,{month:'short'}); }
+    else if(period==='month'){ lbl = start.toLocaleDateString(undefined,{month:'short'}); }
+    else lbl = start.getFullYear();
+    buckets.push({vol, lbl, sub, cur:i===0});
   }
   const max = Math.max(...buckets.map(b=>b.vol), 1);
   return `<div class="trendchart">${buckets.map(b=>`
     <div class="bar">
       <div class="fill${b.cur?' cur':''}" style="height:${Math.max(3,Math.round((b.vol/max)*78))}px"></div>
-      <div class="lbl">${b.lbl}</div>
+      <div class="lbl">${b.lbl}${b.sub?`<div class="lblsub">${b.sub}</div>`:''}</div>
     </div>`).join('')}</div>`;
 }
 
@@ -1910,107 +2043,10 @@ function bodyDiagramSVG(statuses){
   </div>`;
 }
 
-/* ---------------- STANDARDS (compare to others) ---------------- */
-const PROFILE_KEY = 'rr-profile';
-const DEFAULT_PROFILE = {height:180, weight:75, age:21};
-let PROFILE = {...DEFAULT_PROFILE};
-
-async function loadProfile(){
-  try{
-    const res = await window.storage.get(PROFILE_KEY);
-    if(res && res.value) return {...DEFAULT_PROFILE, ...JSON.parse(res.value)};
-  }catch(e){}
-  return {...DEFAULT_PROFILE};
-}
-async function saveProfile(p){ try{ await window.storage.set(PROFILE_KEY, JSON.stringify(p)); }catch(e){} }
-
-// approximate bodyweight-multiplier standards (male lifters), widely-cited averages
-const STANDARDS = {
-  'Squat':     {keys:['squat'], exclude:['leg press','split squat','bulgarian','pistol','goblet'], levels:[0.5,0.75,1.25,1.75,2.25]},
-  'Bench':     {keys:['bench'], exclude:['incline','decline','dumbbell','smith','machine'], levels:[0.5,0.75,1.0,1.5,2.0]},
-  'Deadlift':  {keys:['deadlift'], exclude:['romanian','rdl','stiff leg','straight leg'], levels:[0.75,1.0,1.5,2.0,2.5]},
-  'OHP':       {keys:['overhead press','shoulder press','military press','ohp'], exclude:['dumbbell','machine','smith'], levels:[0.35,0.5,0.7,1.0,1.3]},
-};
-const LEVEL_NAMES = ['Beginner','Novice','Intermediate','Advanced','Elite'];
-
-function findBestLift(exerciseMap, def){
-  let best = null;
-  for(const [name, occs] of exerciseMap){
-    const n = name.toLowerCase();
-    const matchesKey = def.keys.some(k=>n.includes(k));
-    const isExcluded = def.exclude.some(k=>n.includes(k));
-    if(!matchesKey || isExcluded) continue;
-    for(const occ of occs){
-      const e1 = occ.e1rm;
-      if(!best || e1 > best.e1rm) best = {e1rm:e1, name, date:occ.date, topSet:occ.topSet};
-    }
-  }
-  return best;
-}
-
-function levelForRatio(ratio, levels){
-  for(let i=levels.length-1;i>=0;i--){ if(ratio>=levels[i]) return i; }
-  return -1;
-}
-
-async function renderStandards(){
-  PROFILE = await loadProfile();
-  document.getElementById('profHeight').value = PROFILE.height;
-  document.getElementById('profWeight').value = PROFILE.weight;
-  document.getElementById('profAge').value = PROFILE.age;
-
-  drawGauges();
-
-  ['profHeight','profWeight','profAge'].forEach(id=>{
-    const el = document.getElementById(id);
-    el.oninput = async ()=>{
-      PROFILE = {height:+document.getElementById('profHeight').value||DEFAULT_PROFILE.height,
-                 weight:+document.getElementById('profWeight').value||DEFAULT_PROFILE.weight,
-                 age:+document.getElementById('profAge').value||DEFAULT_PROFILE.age};
-      await saveProfile(PROFILE);
-      drawGauges();
-    };
-  });
-}
-
-function drawGauges(){
-  const {exerciseMap} = DATA;
-  const fallbackBw = PROFILE.weight || 75;
-  const html = Object.entries(STANDARDS).map(([lift, def])=>{
-    const best = findBestLift(exerciseMap, def);
-    if(!best){
-      return `<div class="liftGauge"><div class="head"><div class="name">${lift}</div><div class="val" style="color:var(--dim-2);">No data</div></div>
-        <p style="color:var(--dim-2);font-size:12px;margin:0;">Log a ${lift.toLowerCase()} session to see this.</p></div>`;
-    }
-    const bwEntry = bwAt(best.date);
-    const bw = bwEntry ? bwEntry.kg : fallbackBw;
-    const bwNote = bwEntry ? `${bw}kg on ${fmtDate(best.date)}` : `${bw}kg (no reading logged — using profile weight)`;
-    const ratio = best.e1rm / bw;
-    const lvlIdx = levelForRatio(ratio, def.levels);
-    const lvlName = lvlIdx>=0 ? LEVEL_NAMES[lvlIdx] : 'Below beginner';
-    const minL = def.levels[0]*0.6, maxL = def.levels[4]*1.15;
-    const pos = Math.max(0, Math.min(100, ((ratio-minL)/(maxL-minL))*100));
-    return `
-      <div class="liftGauge">
-        <div class="head">
-          <div class="name">${lift}</div>
-          <div class="val num">~${Math.round(best.e1rm)}kg est. <span class="lvlbadge">${lvlName}</span></div>
-        </div>
-        <div style="font-size:11px;color:var(--dim-2);margin:-4px 0 4px;">from ${best.name}</div>
-        <div style="font-size:11px;color:var(--dim-2);margin:0 0 8px;">vs bodyweight: ${bwNote}</div>
-        <div class="gaugetrack">
-          <div class="fill" style="width:${pos}%;"></div>
-          <div class="dot" style="left:${pos}%;"></div>
-        </div>
-        <div class="gaugelabels"><span>Beg</span><span>Nov</span><span>Int</span><span>Adv</span><span>Elite</span></div>
-      </div>`;
-  }).join('');
-  document.getElementById('liftGauges').innerHTML = html;
-}
-
 /* ---------------- EXERCISES ---------------- */
 function suggestFor(ex, occs, binHistory, stallStreak){
   const last = occs[occs.length-1];
+  const sideTag = last.topSet.side ? ` (${last.topSet.side})` : '';
   const primaryBin = binFor(last.topSet.reps);
   const entries = binHistory.get(ex).get(primaryBin);
   const idx = entries.length-1;
@@ -2020,20 +2056,20 @@ function suggestFor(ex, occs, binHistory, stallStreak){
   const dash='<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>';
 
   if(!prevEntry){
-    return {badge:'hold', icon:dash, label:'New range', text:`First time in the ${primaryBin} range — next time try to match ${last.topSet.reps} reps at ${last.topSet.kg}kg, or add a rep.`};
+    return {badge:'hold', icon:dash, label:'New range', text:`First time in the ${primaryBin} range — next time try to match ${last.topSet.reps} reps at ${last.topSet.kg}kg${sideTag}, or add a rep.`};
   }
   const streak = stallStreak(entries);
   const deltaKg = last.topSet.kg - prevEntry.weight;
 
   if(deltaKg > 0.05){
     const bump = roundToHalf(last.topSet.kg*1.025);
-    return {badge:'up', icon:arrowUp, label:'Progressing', text:`Up from ${prevEntry.weight}kg×${prevEntry.reps} to ${last.topSet.kg}kg×${last.topSet.reps} in the ${primaryBin} range. Try ${bump}kg next time, or hold and add a rep.`};
+    return {badge:'up', icon:arrowUp, label:'Progressing', text:`Up from ${prevEntry.weight}kg×${prevEntry.reps} to ${last.topSet.kg}kg×${last.topSet.reps}${sideTag} in the ${primaryBin} range. Try ${bump}kg next time, or hold and add a rep.`};
   }
   if(streak>=3){
-    return {badge:'stall', icon:alert, label:`Stalled ×${streak}`, text:`No new best in the ${primaryBin} range for ${streak} sessions (stuck around ${last.topSet.kg}kg). Consider a deload, an extra set, or shifting rep range.`};
+    return {badge:'stall', icon:alert, label:`Stalled ×${streak}`, text:`No new best in the ${primaryBin} range for ${streak} sessions (stuck around ${last.topSet.kg}kg${sideTag}). Consider a deload, an extra set, or shifting rep range.`};
   }
   if(deltaKg < -0.05){
-    return {badge:'hold', icon:dash, label:'Dipped', text:`Below last time (${last.topSet.kg}kg×${last.topSet.reps} vs ${prevEntry.weight}kg×${prevEntry.reps}) — repeat this weight, prioritize clean reps and recovery.`};
+    return {badge:'hold', icon:dash, label:'Dipped', text:`Below last time (${last.topSet.kg}kg×${last.topSet.reps}${sideTag} vs ${prevEntry.weight}kg×${prevEntry.reps}) — repeat this weight, prioritize clean reps and recovery.`};
   }
   return {badge:'hold', icon:dash, label:'Holding', text:`Matched last time in the ${primaryBin} range at ${last.topSet.kg}kg — push for +1 rep next session before adding weight.`};
 }
@@ -2072,7 +2108,7 @@ function renderExercises(exerciseMap, binHistory, stallStreak){
           <div class="exTop">
             <div>
               <div class="exName">${it.ex}</div>
-              <div class="exMeta">${fmtDate(it.last.date)} · ${it.last.topSet.kg}kg × ${it.last.topSet.reps} · ${it.occs.length} session${it.occs.length!==1?'s':''}</div>
+              <div class="exMeta">${fmtDate(it.last.date)} · ${it.last.topSet.kg}kg × ${it.last.topSet.reps}${it.last.topSet.side?' ('+it.last.topSet.side+')':''} · ${it.occs.length} session${it.occs.length!==1?'s':''}</div>
             </div>
             <span class="badge ${it.sug.badge}">${it.sug.icon}${it.sug.label}</span>
           </div>

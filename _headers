@@ -1,0 +1,15 @@
+# Netlify cache headers — reduces bandwidth/credit usage by letting browsers
+# reuse files instead of re-downloading them on every visit.
+
+# The app shell — safe to cache for a while, but short enough that you'll
+# always get a real update within an hour of deploying a fix.
+/index.html
+  Cache-Control: public, max-age=3600, must-revalidate
+
+# These never change unless you explicitly replace them, so cache hard.
+/manifest.json
+  Cache-Control: public, max-age=604800, immutable
+/icon-192.png
+  Cache-Control: public, max-age=31536000, immutable
+/icon-512.png
+  Cache-Control: public, max-age=31536000, immutable

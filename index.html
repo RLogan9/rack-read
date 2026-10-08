@@ -111,6 +111,15 @@
   .tabbtn.active{color:var(--ember);}
   .tabbtn:active{transform:scale(.94);}
 
+  .snackbar{
+    position:fixed;left:16px;right:16px;bottom:calc(72px + var(--safe-b));z-index:32;
+    background:var(--surface-3);border:1px solid var(--hair-2);border-radius:14px;
+    padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);animation:snackIn .2s ease both;
+  }
+  @keyframes snackIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .snackbar span{font-size:13.5px;color:var(--chalk);}
+  .snackbar button{background:none;border:none;color:var(--ember);font-weight:700;font-size:13.5px;cursor:pointer;flex-shrink:0;}
   .fab{
     position:fixed;right:20px;bottom:calc(64px + var(--safe-b));z-index:31;
     width:56px;height:56px;border-radius:50%;
@@ -286,11 +295,11 @@
   /* ---------- period toggle + trend chart ---------- */
   .periodRow{display:flex;gap:8px;margin-bottom:14px;}
   .periodRow .chip{flex:1;text-align:center;min-width:0;}
-  .trendchart{display:flex;align-items:flex-end;gap:6px;height:78px;margin-top:4px;}
-  .trendchart .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
-  .trendchart .bar .fill{width:100%;max-width:26px;background:var(--surface-3);border-radius:4px 4px 2px 2px;position:relative;}
+  .trendchart{display:flex;align-items:flex-end;gap:6px;height:108px;margin-top:8px;}
+  .trendchart .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%;}
+  .trendchart .bar .fill{width:100%;max-width:26px;background:var(--surface-3);border-radius:4px 4px 2px 2px;position:relative;flex-shrink:0;}
   .trendchart .bar .fill.cur{background:var(--ember);}
-  .trendchart .bar .lbl{font-size:9.5px;color:var(--dim-2);text-align:center;line-height:1.3;}
+  .trendchart .bar .lbl{font-size:9.5px;color:var(--dim-2);text-align:center;line-height:1.3;flex-shrink:0;}
   .trendchart .bar .lblsub{font-size:8px;color:var(--dim-2);text-transform:uppercase;letter-spacing:.03em;}
 
   /* ---------- muscles tab ---------- */
@@ -318,9 +327,40 @@
   .profileField{flex:1;min-width:0;}
   .profileField label{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;}
   .profileField input{
-    width:100%;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);
-    padding:9px 10px;border-radius:10px;font-size:14px;font-family:inherit;
+    width:100%;min-width:0;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);
+    padding:9px 10px;border-radius:10px;font-size:14px;font-family:inherit;box-sizing:border-box;
   }
+  /* iOS date inputs carry a wide intrinsic size that pushes neighbours around — strip it */
+  input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;display:block;min-height:38px;line-height:1.2;}
+  input[type=date]::-webkit-date-and-time-value{text-align:left;}
+
+  /* ---------- run laps ---------- */
+  .lapHead,.lapRow{display:flex;gap:6px;align-items:center;}
+  .lapHead{font-size:10px;color:var(--dim-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+  .lapRow{margin-bottom:7px;}
+  .lapNum{width:18px;flex-shrink:0;font-size:11px;color:var(--dim-2);text-align:center;}
+  .lapRow input[type=text],.lapRow input[type=number]{
+    min-width:0;width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);
+    padding:9px 8px;border-radius:10px;font-size:14px;font-family:inherit;
+  }
+  .lapDist{flex:1;min-width:0;} .lapTime{flex:1;min-width:0;}
+  .lapPace{width:58px;flex-shrink:0;font-size:12px;text-align:right;color:var(--brass);font-variant-numeric:tabular-nums;}
+  .lapKind,.lapDel{
+    flex-shrink:0;width:30px;height:34px;border-radius:9px;border:1px solid var(--hair-2);
+    background:var(--surface-2);color:var(--dim);font-size:11px;font-weight:700;cursor:pointer;padding:0;font-family:inherit;
+  }
+  .lapKind.work{background:rgba(255,90,44,.14);border-color:var(--ember-dim);color:var(--ember);}
+  .lapDel{color:var(--dim-2);font-size:15px;}
+  .lapTotals{font-size:12.5px;color:var(--dim);margin:4px 0 12px;line-height:1.5;}
+  .lapTotals b{color:var(--chalk);}
+  .runItem{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:11px 13px;margin-bottom:8px;}
+  .runItem .rTop{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .runItem .rMain{font-weight:700;font-size:14px;}
+  .runItem .rMeta{font-size:11.5px;color:var(--dim);margin-top:2px;}
+  .runItem .rLaps{margin-top:8px;border-top:1px solid var(--hair);padding-top:7px;font-size:12px;}
+  .runItem .rLap{display:flex;justify-content:space-between;padding:2px 0;color:var(--dim);font-variant-numeric:tabular-nums;}
+  .runItem .rLap.work{color:var(--chalk);}
+  .runItem .rDel{background:none;border:none;color:var(--dim-2);font-size:12px;cursor:pointer;font-family:inherit;padding:4px;}
 
   /* ---------- routines ---------- */
   .routineItem{
@@ -356,12 +396,15 @@
   .uniTag{font-size:9.5px;color:var(--brass);background:rgba(217,164,65,.15);padding:2px 6px;border-radius:8px;margin-left:6px;font-weight:700;text-transform:none;}
   .buildSetRow.warmup{opacity:0.65;}
   .buildSetRow .setno{width:16px;font-size:11.5px;color:var(--dim-2);flex-shrink:0;}
+  .bsRpe{width:30px;flex-shrink:0;min-width:0;background:var(--surface);border:1px solid var(--hair);color:var(--chalk);
+    padding:9px 2px;border-radius:9px;font-size:11.5px;font-family:inherit;text-align:center;}
+  .buildSetRow.uni .bsRpe{width:26px;padding:8px 2px;font-size:10.5px;}
   .warmupToggle, .uniToggle{
-    width:24px;height:24px;flex-shrink:0;border-radius:50%;border:1px solid var(--hair-2);
-    background:var(--surface);color:var(--dim-2);font-size:11px;font-weight:700;cursor:pointer;padding:0;
+    width:22px;height:22px;flex-shrink:0;border-radius:50%;border:1px solid var(--hair-2);
+    background:var(--surface);color:var(--dim-2);font-size:10.5px;font-weight:700;cursor:pointer;padding:0;
   }
   .buildSetRow.warmup .warmupToggle{background:rgba(217,164,65,.18);color:var(--brass);border-color:var(--brass);}
-  .buildSetRow.uni .uniToggle{background:rgba(255,90,44,.18);color:var(--ember);border-color:var(--ember);font-size:9px;}
+  .buildSetRow.uni .uniToggle{background:rgba(255,90,44,.18);color:var(--ember);border-color:var(--ember);font-size:8.5px;}
   .lastTimeHint{font-size:12px;color:var(--dim);margin:-4px 0 10px;}
   .buildAddSetBtn{background:none;border:none;color:var(--ember);font-size:12.5px;font-weight:600;cursor:pointer;padding:2px 0;}
   .buildAddExRow{display:flex;gap:8px;margin-top:4px;}
@@ -376,6 +419,10 @@
 
 <div id="app">
   <div id="dbErrorBanner" style="display:none;position:sticky;top:0;z-index:100;background:#e5484d;color:#1a0d06;padding:12px 16px;font-size:13.5px;font-weight:600;line-height:1.4;"></div>
+  <div id="undoSnackbar" class="snackbar" style="display:none;">
+    <span id="undoMsg"></span>
+    <button id="undoBtn">Undo</button>
+  </div>
 
   <header class="top">
     <div class="brandmark">
@@ -413,6 +460,11 @@
     <!-- ============ HISTORY ============ -->
     <section class="panel" id="panel-history" data-panel="history">
       <h2 class="section">Session review</h2>
+      <div class="searchwrap" style="margin-bottom:10px;">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="historySearch" list="knownExercises" placeholder="Search sessions by exercise…">
+      </div>
+      <p id="historySearchStatus" style="color:var(--dim-2);font-size:12px;margin:-4px 0 10px;display:none;"></p>
       <select class="plainSelect" id="monthJump" style="margin-bottom:10px;"></select>
       <div class="datechip-scroll" id="dateChips"></div>
       <div class="card" id="sessionDetail"></div>
@@ -457,6 +509,7 @@
     <div class="chip active" data-mode="session">Session</div>
     <div class="chip" data-mode="run">Run</div>
     <div class="chip" data-mode="weight">Weight</div>
+    <div class="chip" data-mode="vo2">VO₂ max</div>
   </div>
 
   <div id="logModeSession">
@@ -469,16 +522,13 @@
     </div>
     <button class="btn ghost" id="buildStartBtn" style="width:100%;">Start</button>
     <div id="buildForm" style="margin-top:14px;overflow-x:hidden;min-width:0;"></div>
+    <textarea id="sessionNotes" class="pasteArea" placeholder="Session notes (optional) — how it felt, energy, sleep, anything worth remembering…" style="min-height:60px;margin-top:10px;display:none;"></textarea>
     <button class="btn primary" id="buildSaveBtn" style="width:100%;margin-top:14px;display:none;">Save session</button>
     <div class="toast" id="buildMsg"></div>
   </div>
 
   <div id="logModeRun" style="display:none;">
-    <p class="hint">Log a run — distance and type are enough, the rest is optional.</p>
-    <div class="profileRow">
-      <div class="profileField"><label>Date</label><input type="date" id="runDate"></div>
-      <div class="profileField"><label>Distance (km)</label><input type="number" id="runDistance" step="0.1" inputmode="decimal"></div>
-    </div>
+    <p class="hint" id="runHint">Log a run — distance and type are enough, the rest is optional.</p>
     <div class="chipRow" id="runTypeChips">
       <div class="chip active" data-type="Easy">Easy</div>
       <div class="chip" data-type="Tempo">Tempo</div>
@@ -486,7 +536,23 @@
       <div class="chip" data-type="Long">Long</div>
       <div class="chip" data-type="Other">Other</div>
     </div>
-    <div class="profileField" style="margin-bottom:12px;"><label>Duration (min, optional)</label><input type="number" id="runDuration" inputmode="numeric"></div>
+    <div class="profileRow" style="margin-bottom:12px;">
+      <div class="profileField"><label>Date</label><input type="date" id="runDate"></div>
+    </div>
+    <div class="profileRow" id="runPlainFields">
+      <div class="profileField"><label>Distance (km)</label><input type="number" id="runDistance" step="0.01" inputmode="decimal"></div>
+      <div class="profileField"><label>Time (min, optional)</label><input type="number" id="runDuration" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div id="runLapFields" style="display:none;">
+      <div class="lapHead"><span style="width:18px;"></span><span style="flex:1;">Distance (m)</span><span style="flex:1;">Time (m:ss)</span><span style="width:58px;text-align:right;">Pace /km</span><span style="width:30px;"></span><span style="width:30px;"></span></div>
+      <div id="lapRows"></div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn ghost" id="addLapBtn" style="flex:1;">+ Lap</button>
+        <button class="btn ghost" id="repeatLapBtn" style="flex:1;" title="Add the same distance again, ready for its time">+ Same again</button>
+      </div>
+      <p class="hint" style="margin:0 0 6px;">Tap the <b>W</b> / <b>E</b> button to mark a lap as hard work or easy (warm-up, jog recovery, cool-down). Pace stats are for work laps only; totals include everything.</p>
+      <div class="lapTotals" id="lapTotals"></div>
+    </div>
     <button class="btn primary" id="runBtn" style="width:100%;">Log this run</button>
     <div class="toast" id="runMsg"></div>
   </div>
@@ -500,6 +566,29 @@
     <button class="btn primary" id="bwBtn" style="width:100%;">Log weight</button>
     <div class="toast" id="bwMsg"></div>
   </div>
+
+  <div id="logModeVo2" style="display:none;">
+    <p class="hint">Enter your VO₂ max reading (from your watch or a test). One reading per day — logging again on the same date replaces it.</p>
+    <div class="profileRow" style="margin-bottom:12px;">
+      <div class="profileField"><label>Date</label><input type="date" id="vo2Date"></div>
+    </div>
+    <div class="profileRow">
+      <div class="profileField"><label>VO₂ max (mL/kg/min)</label><input type="number" id="vo2Value" step="0.1" inputmode="decimal"></div>
+    </div>
+    <button class="btn primary" id="vo2Btn" style="width:100%;">Log VO₂ max</button>
+    <div class="toast" id="vo2Msg"></div>
+  </div>
+</div>
+
+<!-- ---------- runs list sheet ---------- -->
+<div class="scrim" id="scrimRuns"></div>
+<div class="sheet" id="sheetRuns">
+  <div class="handle"></div>
+  <button class="iconbtn sheet-close" id="closeRuns" style="position:absolute;top:14px;right:16px;">
+    <svg class="icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+  <h3>Runs</h3>
+  <div id="runsList"></div>
 </div>
 
 <!-- ---------- data / settings sheet ---------- -->
@@ -560,6 +649,7 @@
     <button class="btn ghost" id="exportCsvBtn" style="flex:1;min-width:150px;">Export sessions (CSV)</button>
     <button class="btn ghost" id="exportRunsCsvBtn" style="flex:1;min-width:150px;">Export runs (CSV)</button>
     <button class="btn ghost" id="exportBwCsvBtn" style="flex:1;min-width:150px;">Export bodyweight (CSV)</button>
+    <button class="btn ghost" id="exportVo2CsvBtn" style="flex:1;min-width:150px;">Export VO₂ max (CSV)</button>
     <button class="btn ghost" id="exportJsonBtn" style="flex:1;min-width:150px;">Full backup (JSON)</button>
   </div>
 
@@ -759,6 +849,20 @@ async function saveRuns(entries){
   }catch(e){ console.error('Runs save failed', e); }
 }
 
+const VO2_KEY = 'rr-vo2';
+async function loadVO2(){
+  try{
+    const res = await window.storage.get(VO2_KEY);
+    if(!res || !res.value) return [];
+    return JSON.parse(res.value).map(r=>({...r, date:new Date(r.date)})).sort((a,b)=>a.date-b.date);
+  }catch(e){ return []; }
+}
+async function saveVO2(entries){
+  try{
+    await window.storage.set(VO2_KEY, JSON.stringify(entries.map(r=>({...r, date:r.date.toISOString()}))));
+  }catch(e){ console.error('VO2 save failed', e); }
+}
+
 const ROUTINES_KEY = 'rr-routines';
 async function loadRoutines(){
   try{
@@ -769,6 +873,25 @@ async function loadRoutines(){
 }
 async function saveRoutines(list){
   try{ await window.storage.set(ROUTINES_KEY, JSON.stringify(list)); }catch(e){ console.error('Routines save failed', e); }
+}
+
+const NOTES_KEY = 'rr-notes';
+function sessionNoteKey(dayKey, workout){ return dayKey+'|'+workout; }
+async function loadNotes(){
+  try{
+    const res = await window.storage.get(NOTES_KEY);
+    if(!res || !res.value) return {};
+    return JSON.parse(res.value);
+  }catch(e){ return {}; }
+}
+async function saveNote(dayKey, workout, text){
+  try{
+    const all = await loadNotes();
+    const key = sessionNoteKey(dayKey, workout);
+    if(text && text.trim()) all[key] = text.trim();
+    else delete all[key];
+    await window.storage.set(NOTES_KEY, JSON.stringify(all));
+  }catch(e){ console.error('Note save failed', e); }
 }
 function buildRowsFromCSV(data){
   const rows = [];
@@ -791,6 +914,17 @@ function buildRowsFromCSV(data){
 const epley = (kg,reps)=> kg*(1+reps/30);
 const fmtDate = d => d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
 const fmtDateFull = d => d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+
+// keeps exercise-name inputs suggesting your existing exercise names as you
+// type, so a new routine/set links straight to prior history instead of
+// silently creating a near-duplicate ("Incline Smith Bench Press " vs
+// "Incline smith bench press")
+function populateExerciseDatalist(){
+  const dl = document.getElementById('knownExercises');
+  if(!dl || !DATA.exerciseMap) return;
+  const names = Array.from(DATA.exerciseMap.keys()).sort((a,b)=>a.localeCompare(b));
+  dl.innerHTML = names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
+}
 const roundToHalf = n => Math.round(n*2)/2;
 
 const REP_BINS = [
@@ -825,9 +959,9 @@ const MUSCLE_RULES = [
   ['Hamstrings',  ['romanian','rdl','leg curl','hamstring','good morning','nordic'], {Hamstrings:1.0, Glutes:0.3}],
   ['Glutes',      ['glute','hip thrust'],                      {Glutes:1.0, Hamstrings:0.3}],
   ['Adductors',   ['abduct','adduct'],                          {Glutes:0.5}],
-  ['Quads',       ['squat','leg press','lunge','leg extension','hack squat','split squat','pistol'], {Quads:1.0, Glutes:0.5}],
+  ['Quads',       ['squat','leg press','lunge','leg extension','hack squat','split squat','pistol','quad'], {Quads:1.0, Glutes:0.5}],
   ['Deadlift',    ['deadlift'],                                 {Back:1.0, Hamstrings:0.5, Glutes:0.5}],
-  ['Chest',       ['bench','chest','fly','flye','pec','dip','push up','push-up','pushup'], {Chest:1.0, Triceps:0.5, Shoulders:0.3}],
+  ['Chest',       ['bench','chest','fly','flye','pec','dip','push up','push-up','pushup','incline press','decline press','flat press'], {Chest:1.0, Triceps:0.5, Shoulders:0.3}],
   ['Back',        ['row','pulldown','pull up','pull-up','pullup','lat ','back extension','shrug','dead hang'], {Back:1.0, Biceps:0.5}],
   ['RearDelt',    ['rear delt','face pull','reverse fly'],      {Shoulders:1.0, Back:0.3}],
   ['Shoulders',   ['shoulder press','shoulder raise','ohp','overhead press','military press','lateral raise','front raise','arnold'], {Shoulders:1.0, Triceps:0.5}],
@@ -838,6 +972,12 @@ const MUSCLE_RULES = [
 // returns {MuscleGroup: weight, ...} or null if nothing matched
 function classifyMuscle(name){
   const n = ' '+name.toLowerCase()+' ';
+  // bench-angle presses are almost always chest even without the word "bench"
+  // (e.g. "Incline DB Press", "Decline Barbell Press") — the angle word and
+  // "press" don't have to be adjacent, since equipment words sit between them
+  if(/press/.test(n) && /(incline|decline|flat)/.test(n) && !/(shoulder|overhead|military|leg|calf)/.test(n)){
+    return {Chest:1.0, Triceps:0.5, Shoulders:0.3};
+  }
   for(const [label, keys, weights] of MUSCLE_RULES){
     for(const k of keys){ if(n.includes(k)) return weights; }
   }
@@ -866,6 +1006,26 @@ function toastEl(el, ok, msg, icon){
   el.innerHTML = (ok?svgOk:svgErr) + '<span>'+msg+'</span>';
 }
 
+// Brief window to reverse a destructive action (delete session/exercise).
+// previousRows is the FULL rows array from right before the delete —
+// restoring it is a straight overwrite, not a merge, so it undoes exactly
+// what changed, including any dedupe side-effects.
+let undoTimer = null;
+function showUndoSnackbar(previousRows, message){
+  const bar = document.getElementById('undoSnackbar');
+  const undoBtn = document.getElementById('undoBtn');
+  document.getElementById('undoMsg').textContent = message;
+  bar.style.display = 'flex';
+  if(undoTimer) clearTimeout(undoTimer);
+  undoBtn.onclick = async ()=>{
+    clearTimeout(undoTimer);
+    bar.style.display = 'none';
+    await saveStoredRows(previousRows);
+    if(previousRows.length) run(previousRows); else renderEmptyOverview();
+  };
+  undoTimer = setTimeout(()=>{ bar.style.display = 'none'; }, 7000);
+}
+
 /* ============================================================
    APP STATE + NAVIGATION
 ============================================================ */
@@ -886,10 +1046,15 @@ function closeSheet(sheetId, scrimId){
   document.getElementById(sheetId).classList.remove('show');
   document.getElementById(scrimId).classList.remove('show');
 }
+function clearLogToasts(){
+  ['runMsg','bwMsg','vo2Msg'].forEach(id=>{ const el=document.getElementById(id); if(el) el.className='toast'; });
+}
 document.getElementById('fabLog').addEventListener('click', ()=>{
+  clearLogToasts();
   const today = new Date().toISOString().slice(0,10);
   document.getElementById('runDate').value = today;
   document.getElementById('bwDate').value = today;
+  document.getElementById('vo2Date').value = today;
   document.getElementById('buildDate').value = today;
   openSheet('sheetLog','scrimLog');
 
@@ -905,6 +1070,8 @@ document.getElementById('fabLog').addEventListener('click', ()=>{
       clearDraftLocal();
       document.getElementById('buildForm').innerHTML = '';
       document.getElementById('buildSaveBtn').style.display = 'none';
+      document.getElementById('sessionNotes').style.display = 'none';
+      document.getElementById('sessionNotes').value = '';
       msgEl.className = 'toast';
     };
   }
@@ -922,13 +1089,142 @@ document.querySelectorAll('#logModeChips .chip').forEach(chip=>{
     document.getElementById('logModeSession').style.display = chip.dataset.mode==='session' ? 'block' : 'none';
     document.getElementById('logModeRun').style.display = chip.dataset.mode==='run' ? 'block' : 'none';
     document.getElementById('logModeWeight').style.display = chip.dataset.mode==='weight' ? 'block' : 'none';
+    document.getElementById('logModeVo2').style.display = chip.dataset.mode==='vo2' ? 'block' : 'none';
   });
 });
+
+/* ---------- run type + interval laps ---------- */
+function activeRunType(){ return document.querySelector('#runTypeChips .chip.active').dataset.type; }
+
+// "1:45" -> 105, "45" -> 45, "1:02:30" -> 3750; blank/invalid -> null
+function parseClock(str){
+  const s = String(str||'').trim();
+  if(!s) return null;
+  const parts = s.split(':').map(p=>p.trim());
+  if(parts.length>3 || parts.some(p=>p==='' || isNaN(Number(p)) || Number(p)<0)) return null;
+  const nums = parts.map(Number);
+  let sec = 0;
+  for(const n of nums) sec = sec*60 + n;
+  return sec>0 ? sec : null;
+}
+function fmtClock(sec){
+  if(sec==null || !isFinite(sec)) return '–';
+  sec = Math.round(sec);
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+  return h>0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+}
+// seconds per km from metres + seconds
+function paceSecPerKm(distM, sec){
+  if(!(distM>0) || !(sec>0)) return null;
+  return sec / (distM/1000);
+}
+function fmtPace(spk){ return spk==null ? '–' : fmtClock(spk); }
+
+function lapRowHtml(n, distM, timeStr, kind){
+  return `
+    <div class="lapRow" data-kind="${kind}">
+      <span class="lapNum">${n}</span>
+      <input type="number" class="lapDist" inputmode="numeric" placeholder="400" min="0" step="any" value="${distM||''}">
+      <input type="text" class="lapTime" inputmode="numeric" placeholder="1:45" autocomplete="off" value="${timeStr||''}">
+      <span class="lapPace">–</span>
+      <button type="button" class="lapKind ${kind==='work'?'work':''}" title="Work lap (W) or easy lap (E)">${kind==='work'?'W':'E'}</button>
+      <button type="button" class="lapDel" title="Remove lap">×</button>
+    </div>`;
+}
+function renumberLaps(){
+  document.querySelectorAll('#lapRows .lapRow .lapNum').forEach((el,i)=>el.textContent = i+1);
+}
+function addLap(distM, timeStr, kind){
+  const host = document.getElementById('lapRows');
+  host.insertAdjacentHTML('beforeend', lapRowHtml(host.children.length+1, distM, timeStr, kind||'work'));
+  updateLapTotals();
+}
+function readLaps(){
+  return [...document.querySelectorAll('#lapRows .lapRow')].map(row=>{
+    const distM = parseFloat(row.querySelector('.lapDist').value);
+    const rawT = row.querySelector('.lapTime').value;
+    return {
+      distM: isNaN(distM) ? null : distM,
+      sec: parseClock(rawT),
+      rawTime: rawT.trim(),
+      kind: row.dataset.kind==='easy' ? 'easy' : 'work'
+    };
+  });
+}
+function summariseLaps(laps){
+  const used = laps.filter(l=>l.distM>0);
+  const totalM = used.reduce((s,l)=>s+l.distM,0);
+  const allTimed = used.length>0 && used.every(l=>l.sec>0);
+  const totalSec = allTimed ? used.reduce((s,l)=>s+l.sec,0) : null;
+  const work = used.filter(l=>l.kind==='work' && l.sec>0);
+  const workM = work.reduce((s,l)=>s+l.distM,0), workSec = work.reduce((s,l)=>s+l.sec,0);
+  const paces = work.map(l=>paceSecPerKm(l.distM,l.sec));
+  return {
+    totalM, totalSec, count:used.length,
+    workCount: work.length,
+    avgWorkPace: workSec>0 ? paceSecPerKm(workM,workSec) : null,
+    bestWorkPace: paces.length ? Math.min(...paces) : null
+  };
+}
+function updateLapTotals(){
+  const laps = readLaps();
+  document.querySelectorAll('#lapRows .lapRow').forEach((row,i)=>{
+    const l = laps[i];
+    row.querySelector('.lapPace').textContent = (l.distM>0 && l.sec>0) ? fmtPace(paceSecPerKm(l.distM,l.sec)) : '–';
+  });
+  const sm = summariseLaps(laps);
+  const el = document.getElementById('lapTotals');
+  if(!sm.count){ el.innerHTML = ''; return; }
+  let html = `<b>${(sm.totalM/1000).toFixed(2)} km</b> over ${sm.count} lap${sm.count!==1?'s':''}`;
+  if(sm.totalSec!=null) html += ` · <b>${fmtClock(sm.totalSec)}</b> total`;
+  if(sm.avgWorkPace!=null) html += `<br>Work laps: avg <b>${fmtPace(sm.avgWorkPace)}</b>/km` + (sm.workCount>1 ? ` · fastest <b>${fmtPace(sm.bestWorkPace)}</b>/km` : '');
+  el.innerHTML = html;
+}
+function syncRunMode(){
+  const isInt = activeRunType()==='Interval';
+  document.getElementById('runPlainFields').style.display = isInt ? 'none' : 'flex';
+  document.getElementById('runLapFields').style.display = isInt ? 'block' : 'none';
+  document.getElementById('runHint').textContent = isInt
+    ? 'Interval run — add each lap with its distance and time. Totals and pace work themselves out.'
+    : 'Log a run — distance and type are enough, the rest is optional.';
+  if(isInt && !document.getElementById('lapRows').children.length) addLap('', '', 'work');
+}
+function resetLapForm(){
+  document.getElementById('lapRows').innerHTML = '';
+  document.getElementById('lapTotals').innerHTML = '';
+}
 document.querySelectorAll('#runTypeChips .chip').forEach(chip=>{
   chip.addEventListener('click', ()=>{
     document.querySelectorAll('#runTypeChips .chip').forEach(c=>c.classList.remove('active'));
     chip.classList.add('active');
+    clearLogToasts();
+    syncRunMode();
   });
+});
+document.getElementById('addLapBtn').addEventListener('click', ()=>addLap('', '', 'work'));
+document.getElementById('repeatLapBtn').addEventListener('click', ()=>{
+  const laps = readLaps();
+  const last = laps[laps.length-1];
+  addLap(last && last.distM ? last.distM : '', '', last ? last.kind : 'work');
+});
+document.getElementById('lapRows').addEventListener('input', updateLapTotals);
+document.getElementById('lapRows').addEventListener('click', e=>{
+  const kindBtn = e.target.closest('.lapKind');
+  if(kindBtn){
+    const row = kindBtn.closest('.lapRow');
+    const next = row.dataset.kind==='work' ? 'easy' : 'work';
+    row.dataset.kind = next;
+    kindBtn.classList.toggle('work', next==='work');
+    kindBtn.textContent = next==='work' ? 'W' : 'E';
+    updateLapTotals();
+    return;
+  }
+  const del = e.target.closest('.lapDel');
+  if(del){
+    del.closest('.lapRow').remove();
+    renumberLaps();
+    updateLapTotals();
+  }
 });
 
 /* ============================================================
@@ -936,6 +1232,7 @@ document.querySelectorAll('#runTypeChips .chip').forEach(chip=>{
 ============================================================ */
 let RUNS = [];
 let BW = [];
+let VO2 = [];
 // most recent bodyweight reading on or before a given date (for historical
 // accuracy — comparing an old lift to today's bodyweight is misleading)
 function bwAt(date){
@@ -943,11 +1240,14 @@ function bwAt(date){
   return entries.length ? entries[entries.length-1] : null;
 }
 let ROUTINES = [];
+let NOTES = {};
 
 (async function init(){
   RUNS = await loadRuns();
   BW = await loadBW();
+  VO2 = await loadVO2();
   ROUTINES = await loadRoutines();
+  NOTES = await loadNotes();
   renderRoutineList();
   const stored = await loadStoredRows();
   if(stored.length) run(stored);
@@ -990,18 +1290,58 @@ function handleFile(file){
 document.getElementById('runBtn').addEventListener('click', async ()=>{
   const msgEl = document.getElementById('runMsg');
   const dateVal = document.getElementById('runDate').value;
-  const dist = parseFloat(document.getElementById('runDistance').value);
-  const dur = parseFloat(document.getElementById('runDuration').value);
-  const type = document.querySelector('#runTypeChips .chip.active').dataset.type;
-  if(!dateVal || isNaN(dist) || dist<=0){ toastEl(msgEl,false,'Add a date and a distance greater than 0.'); return; }
-  const entry = {date:new Date(dateVal+'T12:00:00'), distanceKm:dist, type, durationMin:isNaN(dur)?null:dur};
+  const type = activeRunType();
+  if(!dateVal){ toastEl(msgEl,false,'Pick a date.'); return; }
+  let entry, summary;
+  if(type==='Interval'){
+    const laps = readLaps();
+    // a time that was typed but can't be read is an error, not something to silently drop
+    const bad = laps.findIndex(l=>l.rawTime && l.sec==null);
+    if(bad>=0){ toastEl(msgEl,false,`Lap ${bad+1}: couldn’t read that time — use m:ss like 1:45.`); return; }
+    const kept = laps.filter(l=>l.distM>0);
+    if(!kept.length){ toastEl(msgEl,false,'Add at least one lap with a distance greater than 0.'); return; }
+    const sm = summariseLaps(kept);
+    entry = {
+      date:new Date(dateVal+'T12:00:00'),
+      distanceKm: Math.round(sm.totalM)/1000,
+      type,
+      durationMin: sm.totalSec!=null ? Math.round(sm.totalSec/60*1000)/1000 : null,
+      laps: kept.map(l=>({distM:l.distM, sec:l.sec||null, kind:l.kind}))
+    };
+    summary = `Logged an interval run: ${kept.length} lap${kept.length!==1?'s':''}, ${entry.distanceKm.toFixed(2)}km` + (sm.avgWorkPace!=null ? `, work pace ${fmtPace(sm.avgWorkPace)}/km.` : '.');
+  } else {
+    const dist = parseFloat(document.getElementById('runDistance').value);
+    const dur = parseFloat(document.getElementById('runDuration').value);
+    if(isNaN(dist) || dist<=0){ toastEl(msgEl,false,'Add a distance greater than 0.'); return; }
+    entry = {date:new Date(dateVal+'T12:00:00'), distanceKm:dist, type, durationMin:isNaN(dur)?null:dur};
+    summary = `Logged a ${dist}km ${type.toLowerCase()} run.`;
+  }
   RUNS = await loadRuns();
   RUNS.push(entry);
   RUNS.sort((a,b)=>a.date-b.date);
   await saveRuns(RUNS);
-  toastEl(msgEl,true,`Logged a ${dist}km ${type.toLowerCase()} run.`);
+  toastEl(msgEl,true,summary);
   document.getElementById('runDistance').value='';
   document.getElementById('runDuration').value='';
+  resetLapForm();
+  if(type==='Interval') addLap('', '', 'work');
+  if(DATA.sessions.length) renderOverviewForPeriod(currentPeriod);
+  setTimeout(()=>closeSheet('sheetLog','scrimLog'), 900);
+});
+
+document.getElementById('vo2Btn').addEventListener('click', async ()=>{
+  const msgEl = document.getElementById('vo2Msg');
+  const dateVal = document.getElementById('vo2Date').value;
+  const v = parseFloat(document.getElementById('vo2Value').value);
+  if(!dateVal || isNaN(v) || v<=0){ toastEl(msgEl,false,'Add a date and a VO₂ max greater than 0.'); return; }
+  if(v<15 || v>95){ toastEl(msgEl,false,'That looks off — VO₂ max is usually between about 20 and 90 mL/kg/min.'); return; }
+  VO2 = await loadVO2();
+  VO2 = VO2.filter(r=>r.date.toISOString().slice(0,10)!==dateVal);
+  VO2.push({date:new Date(dateVal+'T12:00:00'), value:v});
+  VO2.sort((a,b)=>a.date-b.date);
+  await saveVO2(VO2);
+  toastEl(msgEl,true,`Logged VO₂ max ${v}.`);
+  document.getElementById('vo2Value').value='';
   if(DATA.sessions.length) renderOverviewForPeriod(currentPeriod);
   setTimeout(()=>closeSheet('sheetLog','scrimLog'), 900);
 });
@@ -1056,7 +1396,7 @@ const GRIP_OPTIONS = ['None','Wide','Medium','Close'];
 function exerciseRowHtml(name='', targetSets=3, unilateral=false, grip='None'){
   return `
     <div class="exerciseRow">
-      <input type="text" class="reName" value="${name.replace(/"/g,'&quot;')}" placeholder="Exercise name">
+      <input type="text" class="reName" list="knownExercises" value="${name.replace(/"/g,'&quot;')}" placeholder="Exercise name">
       <input type="number" class="reSets" value="${targetSets}" min="1" max="10" title="Target sets">
       <select class="reGrip" title="Default grip">
         ${GRIP_OPTIONS.map(g=>`<option value="${g}" ${g===grip?'selected':''}>${g}</option>`).join('')}
@@ -1150,6 +1490,7 @@ function buildSetRowHtml(n, isWarmup, unilateral){
           <input type="number" class="bsReps bsRepsR" placeholder="reps" inputmode="numeric">
         </div>
       </div>
+      <input type="number" class="bsRpe" placeholder="RPE" inputmode="decimal" step="0.5" min="5" max="10" title="RPE — how hard this set felt, 5 (easy) to 10 (max effort)">
       <button class="uniToggle" type="button" title="Unilateral — logged per side">${unilateral?'L/R':'⇄'}</button>
       <button class="warmupToggle" type="button" title="Mark as warm-up (excluded from MEV/MAV and PRs)">${isWarmup?'W':'·'}</button>
       <button class="rmBtn bsRemoveBtn" type="button" aria-label="Remove set"><svg class="icon" style="width:15px;height:15px;" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
@@ -1219,14 +1560,15 @@ function saveDraftLocal(){
     const groups = Array.from(document.querySelectorAll('#buildForm .buildExGroup')).map(group=>{
       const sets = Array.from(group.querySelectorAll('.buildSetRow')).map(row=>{
         const unilateral = row.dataset.unilateral==='1';
+        const rpe = row.querySelector('.bsRpe').value;
         if(unilateral){
           return {
-            unilateral, isWarmup: row.dataset.warmup==='1',
+            unilateral, isWarmup: row.dataset.warmup==='1', rpe,
             kgL: row.querySelector('.bsKgL').value, repsL: row.querySelector('.bsRepsL').value,
             kgR: row.querySelector('.bsKgR').value, repsR: row.querySelector('.bsRepsR').value
           };
         }
-        return { unilateral, isWarmup: row.dataset.warmup==='1', kg: row.querySelector('.bsKg').value, reps: row.querySelector('.bsReps').value };
+        return { unilateral, isWarmup: row.dataset.warmup==='1', rpe, kg: row.querySelector('.bsKg').value, reps: row.querySelector('.bsReps').value };
       });
       return { exercise: group.dataset.exercise, grip: group.dataset.grip, sets };
     });
@@ -1234,6 +1576,7 @@ function saveDraftLocal(){
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
       routineId: document.getElementById('buildRoutineSelect').value,
       date: document.getElementById('buildDate').value,
+      notes: document.getElementById('sessionNotes').value,
       groups, savedAt: Date.now()
     }));
   }catch(e){ console.error('draft save failed', e); }
@@ -1250,10 +1593,12 @@ function restoreDraftIntoForm(draft){
   const sel = document.getElementById('buildRoutineSelect');
   if([...sel.options].some(o=>o.value===draft.routineId)) sel.value = draft.routineId;
   document.getElementById('buildDate').value = draft.date;
+  document.getElementById('sessionNotes').value = draft.notes || '';
+  document.getElementById('sessionNotes').style.display = 'block';
 
   const freestyleAddRow = `
     <div class="buildAddExRow">
-      <input type="text" id="freestyleExName" placeholder="Add exercise">
+      <input type="text" id="freestyleExName" list="knownExercises" placeholder="Add exercise">
       <button class="btn ghost" id="freestyleAddExBtn">Add</button>
     </div>`;
   form.innerHTML = draft.groups.map(g=>buildExGroupShellHtml(g.exercise, false, g.grip)).join('') + freestyleAddRow;
@@ -1265,6 +1610,7 @@ function restoreDraftIntoForm(draft){
     g.sets.forEach((s,i)=>{
       list.insertAdjacentHTML('beforeend', buildSetRowHtml(i+1, s.isWarmup, s.unilateral));
       const row = list.lastElementChild;
+      row.querySelector('.bsRpe').value = s.rpe || '';
       if(s.unilateral){
         row.querySelector('.bsKgL').value = s.kgL||''; row.querySelector('.bsRepsL').value = s.repsL||'';
         row.querySelector('.bsKgR').value = s.kgR||''; row.querySelector('.bsRepsR').value = s.repsR||'';
@@ -1295,7 +1641,7 @@ document.getElementById('buildStartBtn').addEventListener('click', ()=>{
   const form = document.getElementById('buildForm');
   const freestyleAddRow = `
     <div class="buildAddExRow">
-      <input type="text" id="freestyleExName" placeholder="Add exercise">
+      <input type="text" id="freestyleExName" list="knownExercises" placeholder="Add exercise">
       <button class="btn ghost" id="freestyleAddExBtn">Add</button>
     </div>`;
   if(routineId==='__freestyle'){
@@ -1313,6 +1659,8 @@ document.getElementById('buildStartBtn').addEventListener('click', ()=>{
     saveDraftLocal();
   };
   document.getElementById('buildSaveBtn').style.display = 'block';
+  document.getElementById('sessionNotes').style.display = 'block';
+  document.getElementById('sessionNotes').value = '';
   saveDraftLocal();
 });
 
@@ -1346,7 +1694,7 @@ document.getElementById('buildForm').addEventListener('click', e=>{
     const row = rmSetBtn.closest('.buildSetRow');
     if(list.querySelectorAll('.buildSetRow').length <= 1){
       // last row in the group — clear it instead of leaving zero rows
-      row.querySelectorAll('.bsKg, .bsReps').forEach(inp=>inp.value='');
+      row.querySelectorAll('.bsKg, .bsReps, .bsRpe').forEach(inp=>inp.value='');
     } else {
       row.remove();
       renumberSetRows(list);
@@ -1394,8 +1742,9 @@ document.getElementById('buildForm').addEventListener('click', e=>{
   }
 });
 document.getElementById('buildForm').addEventListener('input', e=>{
-  if(e.target.matches('.bsKg, .bsReps')) saveDraftLocal();
+  if(e.target.matches('.bsKg, .bsReps, .bsRpe')) saveDraftLocal();
 });
+document.getElementById('sessionNotes').addEventListener('input', saveDraftLocal);
 
 document.getElementById('buildSaveBtn').addEventListener('click', async ()=>{
   const msgEl = document.getElementById('buildMsg');
@@ -1414,22 +1763,24 @@ document.getElementById('buildSaveBtn').addEventListener('click', async ()=>{
     group.querySelectorAll('.buildSetRow').forEach(row=>{
       const isWarmup = row.dataset.warmup === '1';
       const isUni = row.dataset.unilateral === '1';
+      const rpeVal = parseFloat(row.querySelector('.bsRpe').value);
+      const rpe = (!isNaN(rpeVal) && rpeVal>0) ? rpeVal : undefined;
       if(isUni){
         const kgL = parseFloat(row.querySelector('.bsKgL').value);
         const repsL = parseInt(row.querySelector('.bsRepsL').value,10);
         const kgR = parseFloat(row.querySelector('.bsKgR').value);
         const repsR = parseInt(row.querySelector('.bsRepsR').value,10);
         if(!isNaN(kgL) && !isNaN(repsL) && kgL>0 && repsL>0){
-          newRows.push({date:new Date(baseDate.getTime()+msOffset++), workout:routineName, exercise, reps:repsL, kg:kgL, isWarmup, side:'L'});
+          newRows.push({date:new Date(baseDate.getTime()+msOffset++), workout:routineName, exercise, reps:repsL, kg:kgL, isWarmup, side:'L', rpe});
         }
         if(!isNaN(kgR) && !isNaN(repsR) && kgR>0 && repsR>0){
-          newRows.push({date:new Date(baseDate.getTime()+msOffset++), workout:routineName, exercise, reps:repsR, kg:kgR, isWarmup, side:'R'});
+          newRows.push({date:new Date(baseDate.getTime()+msOffset++), workout:routineName, exercise, reps:repsR, kg:kgR, isWarmup, side:'R', rpe});
         }
       } else {
         const kg = parseFloat(row.querySelector('.bsKg').value);
         const reps = parseInt(row.querySelector('.bsReps').value,10);
         if(!isNaN(kg) && !isNaN(reps) && kg>0 && reps>0){
-          newRows.push({date:new Date(baseDate.getTime()+msOffset++), workout:routineName, exercise, reps, kg, isWarmup});
+          newRows.push({date:new Date(baseDate.getTime()+msOffset++), workout:routineName, exercise, reps, kg, isWarmup, rpe});
         }
       }
     });
@@ -1439,11 +1790,15 @@ document.getElementById('buildSaveBtn').addEventListener('click', async ()=>{
   const existing = await loadStoredRows();
   const {merged, added} = mergeRows(existing, newRows);
   await saveStoredRows(merged);
+  await saveNote(dateVal, routineName, document.getElementById('sessionNotes').value);
+  NOTES = await loadNotes();
   toastEl(msgEl,true,`Logged ${added} set${added!==1?'s':''} for ${routineName}.`);
   run(merged);
   clearDraftLocal();
   document.getElementById('buildForm').innerHTML = '';
   document.getElementById('buildSaveBtn').style.display = 'none';
+  document.getElementById('sessionNotes').style.display = 'none';
+  document.getElementById('sessionNotes').value = '';
   setTimeout(()=>closeSheet('sheetLog','scrimLog'), 900);
 });
 
@@ -1451,12 +1806,14 @@ document.getElementById('buildSaveBtn').addEventListener('click', async ()=>{
    Clear data
 ============================================================ */
 document.getElementById('resetLink').addEventListener('click', async ()=>{
-  if(!confirm('Clear all stored data — sessions, runs, bodyweight, and routines? This can\u2019t be undone.')) return;
+  if(!confirm('Clear all stored data — sessions, runs, bodyweight, routines, and notes? This can\u2019t be undone.')) return;
   try{ await window.storage.delete(STORAGE_KEY); }catch(e){}
   try{ await window.storage.delete(BW_KEY); }catch(e){}
   try{ await window.storage.delete(RUNS_KEY); }catch(e){}
+  try{ await window.storage.delete(VO2_KEY); }catch(e){}
   try{ await window.storage.delete(ROUTINES_KEY); }catch(e){}
-  RUNS = []; BW = []; ROUTINES = [];
+  try{ await window.storage.delete(NOTES_KEY); }catch(e){}
+  RUNS = []; BW = []; VO2 = []; ROUTINES = []; NOTES = {};
   renderRoutineList();
   closeSheet('sheetData','scrimData');
   renderEmptyOverview();
@@ -1488,8 +1845,9 @@ document.getElementById('exportCsvBtn').addEventListener('click', async ()=>{
 document.getElementById('exportRunsCsvBtn').addEventListener('click', async ()=>{
   const runs = await loadRuns();
   if(!runs.length){ toastEl(document.getElementById('csvMsg'),false,'No runs logged yet.'); return; }
-  const header = 'Date,Distance (km),Type,Duration (min)\n';
-  const body = runs.map(r=>`${r.date.toISOString().slice(0,10)},${r.distanceKm},${r.type},${r.durationMin!=null?r.durationMin:''}`).join('\n');
+  const header = 'Date,Distance (km),Type,Duration (min),Laps\n';
+  const lapStr = r=> (r.laps||[]).map(l=>`${l.kind==='easy'?'E':'W'} ${l.distM}m ${l.sec?fmtClock(l.sec):'-'}`).join(' | ');
+  const body = runs.map(r=>`${r.date.toISOString().slice(0,10)},${r.distanceKm},${r.type},${r.durationMin!=null?r.durationMin:''},"${lapStr(r)}"`).join('\n');
   downloadBlob(header+body, `rack-read-runs-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
 });
 document.getElementById('exportBwCsvBtn').addEventListener('click', async ()=>{
@@ -1499,17 +1857,28 @@ document.getElementById('exportBwCsvBtn').addEventListener('click', async ()=>{
   const body = bw.map(b=>`${b.date.toISOString().slice(0,10)},${b.kg}`).join('\n');
   downloadBlob(header+body, `rack-read-bodyweight-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
 });
+document.getElementById('exportVo2CsvBtn').addEventListener('click', async ()=>{
+  const v = await loadVO2();
+  if(!v.length){ toastEl(document.getElementById('csvMsg'),false,'No VO₂ max readings logged yet.'); return; }
+  const header = 'Date,VO2 max (mL/kg/min)\n';
+  const body = v.map(r=>`${r.date.toISOString().slice(0,10)},${r.value}`).join('\n');
+  downloadBlob(header+body, `rack-read-vo2max-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
+});
 document.getElementById('exportJsonBtn').addEventListener('click', async ()=>{
   const rows = await loadStoredRows();
   const runs = await loadRuns();
   const bw = await loadBW();
+  const vo2 = await loadVO2();
   const routines = await loadRoutines();
+  const notes = await loadNotes();
   const backup = {
     exportedAt: new Date().toISOString(),
     sessions: rows.map(r=>({...r, date:r.date.toISOString()})),
     runs: runs.map(r=>({...r, date:r.date.toISOString()})),
     bodyweight: bw.map(r=>({...r, date:r.date.toISOString()})),
-    routines
+    vo2max: vo2.map(r=>({...r, date:r.date.toISOString()})),
+    routines,
+    notes
   };
   downloadBlob(JSON.stringify(backup, null, 2), `rack-read-backup-${new Date().toISOString().slice(0,10)}.json`, 'application/json');
 });
@@ -1583,6 +1952,7 @@ function run(rows){
   renderMuscles(0);
   renderExercises(exerciseMap, binHistory, stallStreak);
   renderHistory(sessions, binHistory, epley);
+  populateExerciseDatalist();
 }
 
 /* ---------------- OVERVIEW (period-aware: week / month / year) ---------------- */
@@ -1733,7 +2103,8 @@ function renderOverviewForPeriod(period){
   const barbell = renderBarbell(curVol, prevVol, maxVol, period);
   const trend = renderTrendChart(period, lastDate);
   const bwCard = renderBWCard(bwChange, periodWord);
-  const runCard = renderRunCard(curKm, curRuns.length, kmPctChange, periodWord);
+  const runCard = renderRunCard(curKm, curRuns.length, kmPctChange, periodWord, curRuns);
+  const vo2Card = renderVO2Card(periodWord);
 
   document.getElementById('panel-overview').innerHTML = `
     <div class="periodRow" id="periodChips">
@@ -1762,6 +2133,7 @@ function renderOverviewForPeriod(period){
       ${bwCard}
       ${runCard}
     </div>
+    ${vo2Card}
 
     <div class="card raised">
       <p class="eyebrow">Loaded volume — vs previous ${periodWord}</p>
@@ -1769,7 +2141,8 @@ function renderOverviewForPeriod(period){
     </div>
 
     <div class="card">
-      <p class="eyebrow">Total volume — last 8 ${periodWord}s <span style="color:var(--dim-2);font-weight:400;text-transform:none;letter-spacing:0;">(orange = current)</span></p>
+      <p class="eyebrow" style="margin-bottom:2px;">Total volume — last 8 ${periodWord}s</p>
+      <p style="color:var(--dim-2);font-size:11px;margin:0 0 4px;">Orange bar = this ${periodWord}</p>
       ${trend}
     </div>
 
@@ -1819,19 +2192,105 @@ function renderBWCard(bwChange, periodWord){
     </div>`;
 }
 
-function renderRunCard(curKm, runCount, pctChange, periodWord){
+function renderRunCard(curKm, runCount, pctChange, periodWord, curRuns){
   if(!RUNS.length){
     return `<div class="card" style="flex:1;"><p class="eyebrow">Running</p><p style="color:var(--dim-2);font-size:12.5px;margin:0;">No runs yet.</p></div>`;
   }
   const pctTxt = pctChange===null ? '' :
     (pctChange>=0 ? `<span style="color:var(--ember);">↑ ${pctChange}%</span>` : `<span style="color:var(--dim);">↓ ${Math.abs(pctChange)}%</span>`);
+  // average pace across this period's runs that have a time
+  const timed = (curRuns||[]).filter(r=>r.durationMin>0 && r.distanceKm>0);
+  const tKm = timed.reduce((s,r)=>s+r.distanceKm,0), tMin = timed.reduce((s,r)=>s+r.durationMin,0);
+  const paceTxt = tKm>0 ? `<div style="font-size:11.5px;color:var(--dim);margin-top:2px;">avg pace <span style="color:var(--brass);">${fmtPace(tMin*60/tKm)}</span>/km</div>` : '';
   return `
-    <div class="card" style="flex:1;">
-      <p class="eyebrow">Running</p>
+    <div class="card" style="flex:1;cursor:pointer;" onclick="openRunsSheet()">
+      <p class="eyebrow">Running <span style="color:var(--dim-2);text-transform:none;letter-spacing:0;font-weight:400;">· all runs ›</span></p>
       <div class="v num" style="font-size:22px;font-weight:800;">${curKm.toFixed(1)}<span style="font-size:13px;color:var(--dim);">km</span></div>
       <div style="font-size:11.5px;color:var(--dim);margin-top:2px;">${runCount} run${runCount!==1?'s':''} · ${pctTxt} vs prev ${periodWord}</div>
+      ${paceTxt}
     </div>`;
 }
+
+function renderVO2Card(periodWord){
+  if(!VO2.length){
+    return `<div class="card"><p class="eyebrow">VO₂ max</p><p style="color:var(--dim-2);font-size:12.5px;margin:0;">No readings yet — tap + then <b>VO₂ max</b> to log one.</p></div>`;
+  }
+  const cur = VO2[VO2.length-1];
+  const spark = VO2.slice(-20);
+  const maxV = Math.max(...spark.map(b=>b.value)), minV = Math.min(...spark.map(b=>b.value));
+  const range = Math.max(maxV-minV, 1);
+  const bars = spark.map((b,i)=>{
+    const h = Math.max(3, Math.round(((b.value-minV)/range)*22));
+    return `<div class="${i===spark.length-1?'top':''}" style="height:${h}px"></div>`;
+  }).join('');
+  const prev = VO2.length>1 ? VO2[VO2.length-2] : null;
+  const first = VO2[0];
+  const fmtChange = d => d>0.05 ? `<span style="color:var(--ember);">↑ ${d.toFixed(1)}</span>` : d<-0.05 ? `<span style="color:var(--alarm);">↓ ${Math.abs(d).toFixed(1)}</span>` : `<span style="color:var(--dim);">flat</span>`;
+  const lines = [];
+  if(prev) lines.push(`${fmtChange(cur.value-prev.value)} vs previous reading (${fmtDate(prev.date)})`);
+  if(VO2.length>2) lines.push(`${fmtChange(cur.value-first.value)} since first reading (${fmtDate(first.date)})`);
+  return `
+    <div class="card">
+      <p class="eyebrow">VO₂ max</p>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
+        <div>
+          <div class="v num" style="font-size:22px;font-weight:800;">${cur.value}<span style="font-size:12px;color:var(--dim);font-weight:600;"> mL/kg/min</span></div>
+          <div style="font-size:11.5px;color:var(--dim);margin-top:2px;">${lines.length ? lines.join('<br>') : 'First reading logged ' + fmtDate(cur.date)}</div>
+        </div>
+        <div class="sparkrow" style="margin-top:0;flex:0 0 38%;">${bars}</div>
+      </div>
+    </div>`;
+}
+
+/* ---------- runs list (tap the Running card) ---------- */
+function runPaceText(r){
+  return (r.durationMin>0 && r.distanceKm>0) ? fmtPace(r.durationMin*60/r.distanceKm) : null;
+}
+function openRunsSheet(){
+  const list = document.getElementById('runsList');
+  if(!RUNS.length){
+    list.innerHTML = `<p class="hint">No runs logged yet.</p>`;
+  } else {
+    list.innerHTML = [...RUNS].reverse().map(r=>{
+      const idx = RUNS.indexOf(r);
+      const pace = runPaceText(r);
+      let lapsHtml = '';
+      let workLine = '';
+      if(r.laps && r.laps.length){
+        const sm = summariseLaps(r.laps.map(l=>({distM:l.distM, sec:l.sec, kind:l.kind})));
+        if(sm.avgWorkPace!=null) workLine = ` · work pace <span style="color:var(--brass);">${fmtPace(sm.avgWorkPace)}</span>/km`;
+        lapsHtml = `<div class="rLaps">${r.laps.map((l,i)=>{
+          const p = (l.sec>0) ? fmtPace(paceSecPerKm(l.distM,l.sec)) : null;
+          return `<div class="rLap ${l.kind==='easy'?'':'work'}"><span>${i+1} · ${l.kind==='easy'?'easy':'work'} · ${l.distM}m</span><span>${l.sec>0?fmtClock(l.sec):'–'}${p?` · ${p}/km`:''}</span></div>`;
+        }).join('')}</div>`;
+      }
+      return `
+        <div class="runItem">
+          <div class="rTop">
+            <div>
+              <div class="rMain">${r.distanceKm.toFixed(2).replace(/\.?0+$/,'')} km · ${r.type}</div>
+              <div class="rMeta">${fmtDate(r.date)}${r.durationMin>0 ? ' · '+fmtClock(r.durationMin*60) : ''}${pace ? ' · '+pace+'/km' : ''}${workLine}</div>
+            </div>
+            <button class="rDel" data-idx="${idx}">Delete</button>
+          </div>
+          ${lapsHtml}
+        </div>`;
+    }).join('');
+  }
+  openSheet('sheetRuns','scrimRuns');
+}
+document.getElementById('closeRuns').addEventListener('click', ()=>closeSheet('sheetRuns','scrimRuns'));
+document.getElementById('scrimRuns').addEventListener('click', ()=>closeSheet('sheetRuns','scrimRuns'));
+document.getElementById('runsList').addEventListener('click', async e=>{
+  const btn = e.target.closest('.rDel');
+  if(!btn) return;
+  const r = RUNS[Number(btn.dataset.idx)];
+  if(!r || !confirm('Delete this run?')) return;
+  RUNS = RUNS.filter(x=>x!==r);
+  await saveRuns(RUNS);
+  openRunsSheet();
+  if(DATA.sessions.length) renderOverviewForPeriod(currentPeriod);
+});
 
 function renderTrendChart(period, lastDate){
   const {sessions} = DATA;
@@ -1849,7 +2308,7 @@ function renderTrendChart(period, lastDate){
   const max = Math.max(...buckets.map(b=>b.vol), 1);
   return `<div class="trendchart">${buckets.map(b=>`
     <div class="bar">
-      <div class="fill${b.cur?' cur':''}" style="height:${Math.max(3,Math.round((b.vol/max)*78))}px"></div>
+      <div class="fill${b.cur?' cur':''}" style="height:${Math.max(3,Math.round((b.vol/max)*70))}px"></div>
       <div class="lbl">${b.lbl}${b.sub?`<div class="lblsub">${b.sub}</div>`:''}</div>
     </div>`).join('')}</div>`;
 }
@@ -2211,14 +2670,43 @@ function populateMergeTool(exNames, exerciseMap){
 /* ---------------- HISTORY ---------------- */
 function renderHistory(sessions, binHistory, epley){
   const chipWrap = document.getElementById('dateChips');
-  chipWrap.innerHTML = sessions.slice().reverse().map((s,i)=>{
-    const realIdx = sessions.length-1-i;
-    const d = s.date;
-    return `<div class="datechip${i===0?' active':''}" data-idx="${realIdx}" id="datechip-${realIdx}">
-      <div class="d">${d.getDate()}</div>
-      <div class="m">${d.toLocaleDateString(undefined,{month:'short'})}</div>
-    </div>`;
-  }).join('');
+  const searchInput = document.getElementById('historySearch');
+  const statusEl = document.getElementById('historySearchStatus');
+
+  function renderChips(indices){
+    chipWrap.innerHTML = indices.slice().reverse().map((idx,i)=>{
+      const s = sessions[idx];
+      const d = s.date;
+      return `<div class="datechip${i===0?' active':''}" data-idx="${idx}" id="datechip-${idx}">
+        <div class="d">${d.getDate()}</div>
+        <div class="m">${d.toLocaleDateString(undefined,{month:'short'})}</div>
+      </div>`;
+    }).join('');
+    chipWrap.querySelectorAll('.datechip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        chipWrap.querySelectorAll('.datechip').forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+        renderSession(parseInt(chip.dataset.idx,10));
+      });
+    });
+  }
+  renderChips(sessions.map((_,i)=>i));
+
+  searchInput.oninput = ()=>{
+    const q = searchInput.value.trim().toLowerCase();
+    if(!q){
+      statusEl.style.display = 'none';
+      renderChips(sessions.map((_,i)=>i));
+      renderSession(sessions.length-1);
+      return;
+    }
+    const matches = sessions.map((s,i)=>i).filter(i => sessions[i].rows.some(r=>r.exercise.toLowerCase().includes(q)));
+    statusEl.style.display = 'block';
+    statusEl.textContent = `${matches.length} session${matches.length!==1?'s':''} found`;
+    renderChips(matches);
+    if(matches.length) renderSession(matches[matches.length-1]);
+    else document.getElementById('sessionDetail').innerHTML = '<p style="color:var(--dim-2);text-align:center;padding:24px 0;">No sessions found for that exercise.</p>';
+  };
 
   // month-jump: one entry per calendar month present in the data, newest first,
   // jumping to the earliest session in that month
@@ -2235,6 +2723,8 @@ function renderHistory(sessions, binHistory, epley){
     return `<option value="${seenMonths.get(key)}">${label}</option>`;
   }).join('');
   monthSel.onchange = ()=>{
+    searchInput.value = ''; statusEl.style.display = 'none';
+    renderChips(sessions.map((_,i)=>i));
     const idx = parseInt(monthSel.value,10);
     const chip = document.getElementById(`datechip-${idx}`);
     if(chip){
@@ -2267,7 +2757,7 @@ function renderHistory(sessions, binHistory, epley){
         else if(d<-0.05) deltaHtml = `<span class="delta-down">▼ vs ${prevEntry.weight}×${prevEntry.reps}</span>`;
         else deltaHtml = `<span class="delta-flat">= matched ${prevEntry.weight}×${prevEntry.reps}</span>`;
       }
-      const setsText = sets.map(st=>`${st.side?st.side+': ':''}${st.kg}×${st.reps}${st.isWarmup?' <span style="color:var(--brass);">(w)</span>':''}`).join(', ');
+      const setsText = sets.map(st=>`${st.side?st.side+': ':''}${st.kg}×${st.reps}${st.rpe?` <span style="color:var(--dim-2);">@${st.rpe}</span>`:''}${st.isWarmup?' <span style="color:var(--brass);">(w)</span>':''}`).join(', ');
       rowsHtml += `<tr data-exercise="${ex.replace(/"/g,'&quot;')}">
         <td>${ex}</td>
         <td>${setsText}</td>
@@ -2278,10 +2768,17 @@ function renderHistory(sessions, binHistory, epley){
         </td>
       </tr>`;
     }
+    const noteKey = sessionNoteKey(s.dayKey, s.workout);
+    const existingNote = NOTES[noteKey] || '';
     document.getElementById('sessionDetail').innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <p class="eyebrow" style="margin:0;">${fmtDateFull(s.date)} · ${s.workout}</p>
         <button class="linklike" id="deleteSessionBtn" style="margin:0;font-size:12.5px;color:var(--alarm);background:none;border:none;cursor:pointer;">Delete session</button>
+      </div>
+      <div id="sessionNoteView" style="margin:8px 0 4px;">
+        ${existingNote
+          ? `<p style="font-size:13.5px;color:#d8d2c4;line-height:1.5;margin:0 0 4px;white-space:pre-wrap;">${existingNote}</p><span class="linklike" id="editNoteBtn" style="margin:0;font-size:12px;">Edit note</span>`
+          : `<span class="linklike" id="editNoteBtn" style="margin:0;font-size:12px;color:var(--dim);">+ Add a note</span>`}
       </div>
       <table class="sessionTable" style="margin-top:10px;">
         <thead><tr><th>Exercise</th><th>Sets</th><th>Vs. last time</th><th></th></tr></thead>
@@ -2291,22 +2788,40 @@ function renderHistory(sessions, binHistory, epley){
     `;
 
     document.getElementById('deleteSessionBtn').onclick = async ()=>{
-      if(!confirm(`Delete the entire ${s.workout} session from ${fmtDate(s.date)}? This can\u2019t be undone.`)) return;
       const dayKey = s.dayKey;
       const stored = await loadStoredRows();
       const remaining = stored.filter(r => !(r.date.toISOString().slice(0,10)===dayKey && r.workout===s.workout));
       await saveStoredRows(remaining);
+      await saveNote(dayKey, s.workout, ''); // clear any note tied to this session
+      NOTES = await loadNotes();
+      showUndoSnackbar(stored, `Deleted ${s.workout} (${fmtDate(s.date)}).`);
       if(remaining.length) run(remaining); else { renderEmptyOverview(); }
+    };
+
+    document.getElementById('editNoteBtn').onclick = ()=>{
+      const area = document.getElementById('sessionNoteView');
+      area.innerHTML = `
+        <textarea id="editNoteArea" class="pasteArea" style="min-height:60px;">${existingNote}</textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn primary" id="saveNoteBtn" style="flex:1;">Save note</button>
+          <button class="btn ghost" id="cancelNoteBtn" style="flex:1;">Cancel</button>
+        </div>`;
+      document.getElementById('cancelNoteBtn').onclick = ()=>renderSession(idx);
+      document.getElementById('saveNoteBtn').onclick = async ()=>{
+        await saveNote(s.dayKey, s.workout, document.getElementById('editNoteArea').value);
+        NOTES = await loadNotes();
+        renderSession(idx);
+      };
     };
 
     document.querySelectorAll('#sessionDetail .deleteExBtn').forEach(btn=>{
       btn.onclick = async ()=>{
         const ex = btn.closest('tr').dataset.exercise;
-        if(!confirm(`Remove ${ex} from this session?`)) return;
         const dayKey = s.dayKey;
         const stored = await loadStoredRows();
         const remaining = stored.filter(r => !(r.date.toISOString().slice(0,10)===dayKey && r.workout===s.workout && r.exercise===ex));
         await saveStoredRows(remaining);
+        showUndoSnackbar(stored, `Removed ${ex} from this session.`);
         if(remaining.length) run(remaining); else renderEmptyOverview();
       };
     });
@@ -2325,6 +2840,7 @@ function renderHistory(sessions, binHistory, epley){
                 <span class="setno">${i+1}${st.side?' '+st.side:''}</span>
                 <input type="number" class="bsKg" value="${st.kg}" step="0.5">
                 <input type="number" class="bsReps" value="${st.reps}">
+                <input type="number" class="bsRpe" value="${st.rpe||''}" placeholder="RPE" step="0.5" min="5" max="10">
                 <button class="rmBtn editRmSetBtn" type="button"><svg class="icon" style="width:15px;height:15px;" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
               </div>`).join('')}</div>
             <div style="display:flex;gap:8px;margin-top:10px;">
@@ -2344,10 +2860,12 @@ function renderHistory(sessions, binHistory, epley){
             const original = sets[i];
             const kg = parseFloat(row.querySelector('.bsKg').value);
             const reps = parseInt(row.querySelector('.bsReps').value,10);
+            const rpeVal = parseFloat(row.querySelector('.bsRpe').value);
+            const rpe = (!isNaN(rpeVal) && rpeVal>0) ? rpeVal : undefined;
             if(!isNaN(kg) && !isNaN(reps) && kg>0 && reps>0){
               newSets.push({
                 date:new Date(s.date.getTime()+msOffset++),
-                workout:s.workout, exercise:ex, reps, kg,
+                workout:s.workout, exercise:ex, reps, kg, rpe,
                 isWarmup: original ? original.isWarmup : false,
                 side: original ? original.side : undefined
               });
@@ -2363,18 +2881,12 @@ function renderHistory(sessions, binHistory, epley){
     });
   }
 
-  chipWrap.querySelectorAll('.datechip').forEach(chip=>{
-    chip.addEventListener('click', ()=>{
-      chipWrap.querySelectorAll('.datechip').forEach(c=>c.classList.remove('active'));
-      chip.classList.add('active');
-      renderSession(parseInt(chip.dataset.idx,10));
-    });
-  });
   renderSession(sessions.length-1);
 
   document.getElementById('dataFooter').textContent =
     `${DATA.rows.length.toLocaleString()} sets across ${sessions.length} sessions, ${fmtDate(sessions[0].date)} – ${fmtDate(sessions[sessions.length-1].date)}. Stored locally in this artifact.`;
 }
 </script>
+<datalist id="knownExercises"></datalist>
 </body>
 </html>

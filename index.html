@@ -367,7 +367,20 @@
   .bodydiagram{display:flex;justify-content:center;padding:6px 0 4px;}
   .muscleLegend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:10px 0 18px;font-size:11px;color:var(--dim);}
   .muscleLegend .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;}
-  .muscleRow{margin-bottom:14px;}
+  .bdm{cursor:pointer;stroke:var(--bg,#0d0b09);stroke-width:1;transition:opacity .15s;}
+  .bdm:active{opacity:.7;} .bdm.sel{stroke:var(--chalk);stroke-width:2;}
+  .bdLbl{font-size:10px;letter-spacing:.14em;color:var(--dim-2);margin-top:2px;font-weight:700;}
+  .bdReadout{text-align:center;font-size:13px;color:var(--dim);min-height:38px;margin:8px 4px 4px;line-height:1.4;}
+  .bdReadout b{color:var(--chalk);}
+  .zbar{position:relative;height:12px;border-radius:7px;background:var(--surface-3);overflow:hidden;}
+  .zbar .z{position:absolute;top:0;height:100%;opacity:.22;}
+  .zbar .fill{position:absolute;left:0;top:0;height:100%;border-radius:7px;transition:width .3s;}
+  .zbar .tk{position:absolute;top:0;width:2px;height:100%;background:rgba(255,255,255,.55);}
+  .zlbls{position:relative;height:26px;margin-top:3px;}
+  .zlbls span{position:absolute;top:0;transform:translateX(-50%);text-align:center;font-size:10px;line-height:1.15;color:var(--dim-2);white-space:nowrap;}
+  .zlbls span b{display:block;font-size:11.5px;color:var(--dim);font-weight:700;}
+  .muscleRow.flash{animation:mflash 1.2s ease;} @keyframes mflash{0%,60%{background:rgba(255,90,44,.14);}100%{background:transparent;}}
+  .muscleRow{margin-bottom:18px;border-radius:10px;}
   .muscleRow .top{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px;}
   .muscleRow .top b{font-weight:700;}
   .muscleRow .top .status{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;}
@@ -1948,7 +1961,7 @@ let NOTES = {};
 
 (async function init(){
   RUNS = await loadRuns();
-  BW = await loadBW();
+  BW = await loadBW(); await loadMob();
   BWEX = await loadBwEx();
   MEAS = await loadDaily(MEAS_KEY);
   VO2 = await loadVO2();
@@ -2625,7 +2638,7 @@ function primaryMuscle(name){
 function wkBarHtml(muscle, count){
   const L = LANDMARKS[muscle]; if(!L) return '';
   const pct = Math.min(100, count/L.mrv*100);
-  const col = count<L.mev ? 'var(--dim-2)' : (count<=L.mav ? 'var(--ember)' : (count<=L.mrv ? 'var(--brass)' : 'var(--alarm)'));
+  const col = count<L.mev ? 'var(--dim-2)' : (count<=growthHi(L) ? 'var(--ember)' : (count<=L.mrv ? 'var(--brass)' : 'var(--alarm)'));
   const shown = Math.round(count*10)/10;
   return `<div class="wkTop"><span>${muscle} sets this week</span><b class="num" style="color:var(--chalk);">${shown} / ${L.mav}</b></div>
     <div class="wkTrack"><i style="width:${pct}%;background:${col};"></i><u style="left:${L.mev/L.mrv*100}%"></u><u style="left:${L.mav/L.mrv*100}%"></u></div>`;
@@ -3007,7 +3020,7 @@ document.getElementById('resetLink').addEventListener('click', async ()=>{
   try{ await window.storage.delete(STEPS_KEY); }catch(e){}
   try{ await window.storage.delete(ROUTINES_KEY); }catch(e){}
   try{ await window.storage.delete(NOTES_KEY); }catch(e){}
-  RUNS = []; BW = []; VO2 = []; NUTR = []; STEPS = []; ROUTINES = []; NOTES = {};
+  RUNS = []; BW = []; MOB = []; VO2 = []; NUTR = []; STEPS = []; ROUTINES = []; NOTES = {};
   renderWeeklyStatus();
   renderRoutineList();
   closeSheet('sheetData','scrimData');
@@ -3360,6 +3373,27 @@ function weekReviewHtml(o){
     <ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.5;color:var(--chalk);">${todo.slice(0,4).map(t=>`<li style="margin-bottom:5px;">${t}</li>`).join('')}</ol></div>`;
 }
 
+/* ---------------- Mobility & abs routine link + done-days ---------------- */
+const MOB_KEY = 'rr-mobility';
+const MOB_URL = 'https://claude.ai/artifact/9giAjzGJUoSbjaXzBgqWg7';
+let MOB = [];
+async function loadMob(){ try{ const r = await window.storage.get(MOB_KEY); MOB = (r && r.value) ? JSON.parse(r.value) : []; }catch(e){ MOB = []; } }
+async function saveMob(){ try{ await window.storage.set(MOB_KEY, JSON.stringify(MOB)); }catch(e){} }
+function mobWeekDays(){ const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7)); const start = localDayKey(d); return MOB.filter(k=>k>=start).length; }
+function renderMobCard(){
+  const host = document.getElementById('mobCard'); if(!host) return;
+  const today = localDayKey(new Date()), done = MOB.includes(today);
+  host.innerHTML = `<p class="eyebrow">Mobility &amp; abs</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;">
+      <div><div class="num" style="font-size:26px;font-weight:800;">${mobWeekDays()}<span style="font-size:14px;color:var(--dim);font-weight:600;"> days this week</span></div></div>
+      <div style="color:${done?'var(--ember)':'var(--dim)'};font-size:12.5px;font-weight:700;">${done?'Done today':'Not done today'}</div></div>
+    <div style="display:flex;gap:8px;">
+      <a class="btn primary" href="${MOB_URL}" target="_blank" rel="noopener" style="flex:1;text-align:center;text-decoration:none;">Open routine</a>
+      <button class="btn ghost" id="mobToggle" style="flex:1;">${done?'Undo':'Mark done today'}</button></div>`;
+  document.getElementById('mobToggle').onclick = async ()=>{
+    MOB = done ? MOB.filter(k=>k!==today) : MOB.concat(today).sort(); await saveMob(); renderMobCard(); };
+}
+
 function renderOverviewForPeriod(period){
   currentPeriod = period;
   const {sessions, binHistory} = DATA;
@@ -3532,6 +3566,7 @@ function renderOverviewForPeriod(period){
     <div class="card" id="weightCard"></div>
     <div class="card" id="measCard"></div>
     <div class="card" id="restCard"></div>
+    <div class="card" id="mobCard"></div>
 
     <div class="card raised">
       <p class="eyebrow">Loaded volume — vs previous ${periodWord}</p>
@@ -3564,6 +3599,7 @@ function renderOverviewForPeriod(period){
   renderWeightCard();
   renderMeasCard();
   renderRestCard();
+  renderMobCard();
 }
 
 function renderBWCard(bwChange, periodWord){
@@ -4518,10 +4554,13 @@ function renderBarbell(thisVol, prevVol, maxVol, period){
 /* ---------------- MUSCLES (weekly MEV/MAV) ---------------- */
 let muscleWeekOffset = 0;
 
+// MAV is the sweet spot inside a range. The top of the "growth zone" sits halfway between MAV and MRV,
+// which matches published MAV ranges (e.g. chest about 12 to 20 when the single MAV mark is 16).
+const growthHi = lm => (lm.mav + lm.mrv)/2;
 function statusFor(sets, lm){
   if(!lm) return {key:'none', label:'Tracked', color:'var(--dim)'};
   if(sets <= 0 || sets < lm.mev) return {key:'under', label:'Under MEV', color:'var(--dim-2)'};
-  if(sets <= lm.mav) return {key:'ok', label:'Optimal', color:'var(--ember)'};
+  if(sets <= growthHi(lm)) return {key:'ok', label:'Growth zone', color:'var(--ember)'};
   if(sets <= lm.mrv) return {key:'high', label:'High', color:'var(--brass)'};
   return {key:'over', label:'Over MRV', color:'var(--alarm)'};
 }
@@ -4558,35 +4597,38 @@ function renderMuscles(offset){
   const statuses = {};
   MUSCLE_ORDER.forEach(m=> statuses[m] = statusFor(counts[m], LANDMARKS[m]));
 
+  const zoneNote = (sets, lm)=>{
+    const hi = growthHi(lm), r = x=>Math.ceil(x*2)/2;
+    if(sets<=0) return `Nothing yet. ${lm.mev>0?`Needs ${lm.mev} sets to start growing.`:''}`;
+    if(sets<lm.mev) return `${r(lm.mev-sets)} more sets to reach the minimum (${lm.mev}).`;
+    if(sets<lm.mav) return `Growing. ${r(lm.mav-sets)} sets to the sweet spot (${lm.mav}).`;
+    if(sets<=hi) return `In the sweet spot. Room for ${r(lm.mrv-sets)} more before the limit.`;
+    if(sets<=lm.mrv) return `High. Fine for a short push, but recovery is the limit (${r(lm.mrv-sets)} sets of room).`;
+    return `Over the limit by ${r(sets-lm.mrv)} sets. Cut back or expect to stall.`;
+  };
   const bars = MUSCLE_ORDER.map(m=>{
     const lm = LANDMARKS[m], st = statuses[m], sets = counts[m];
-    const trackMax = lm.mrv * 1.15;
-    const fillPct = Math.min(100, (sets/trackMax)*100);
-    const mevPct = (lm.mev/trackMax)*100, mavPct=(lm.mav/trackMax)*100, mrvPct=(lm.mrv/trackMax)*100;
-    const mevHit = sets > 0 && sets >= lm.mev;
-    const checkIcon = '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;"><path d="M20 6L9 17l-5-5"/></svg>';
+    const tMax = lm.mrv*1.2, pc = v=>Math.min(100, v/tMax*100), hi = growthHi(lm);
+    const fillPct = pc(sets);
     const setsDisplay = Math.round(sets*10)/10;
+    const marks = [{k:'MEV',v:lm.mev},{k:'MAV',v:lm.mav},{k:'MRV',v:lm.mrv}].filter(x=>x.v>0);
     return `
-      <div class="muscleRow">
-        <div class="top">
+      <div class="muscleRow" id="mrow_${m}">
+        <div class="top" style="align-items:baseline;">
           <b>${m}</b>
-          <span style="display:flex;align-items:center;gap:8px;">
-            <span style="color:${mevHit?'var(--ember)':'var(--dim-2)'};display:flex;align-items:center;gap:3px;font-weight:700;">${mevHit?checkIcon:''}${mevHit?'MEV hit':'below MEV'}</span>
-            <span>${setsDisplay} sets</span>
-          </span>
+          <span><span class="num" style="font-size:17px;font-weight:800;color:${st.color};">${setsDisplay}</span> <span style="color:var(--dim);font-size:12px;">${setsDisplay===1?'set':'sets'}</span>
+            <span style="font-size:10.5px;font-weight:700;color:${st.color};margin-left:6px;">${st.label.toUpperCase()}</span></span>
         </div>
-        <div class="musclebar">
+        <div class="zbar">
+          <div class="z" style="left:0;width:${pc(lm.mev)}%;background:var(--dim-2);"></div>
+          <div class="z" style="left:${pc(lm.mev)}%;width:${pc(hi)-pc(lm.mev)}%;background:var(--ember);"></div>
+          <div class="z" style="left:${pc(hi)}%;width:${pc(lm.mrv)-pc(hi)}%;background:var(--brass);"></div>
+          <div class="z" style="left:${pc(lm.mrv)}%;width:${100-pc(lm.mrv)}%;background:var(--alarm);"></div>
           <div class="fill" style="width:${fillPct}%;background:${st.color};"></div>
-          <div class="mark" style="left:${mevPct}%;"></div>
-          <div class="mark" style="left:${mavPct}%;"></div>
-          <div class="mark" style="left:${mrvPct}%;"></div>
+          ${marks.map(x=>`<div class="tk" style="left:calc(${pc(x.v)}% - 1px);"></div>`).join('')}
         </div>
-        <div style="position:relative;height:12px;">
-          <div class="marklbl" style="left:${mevPct}%;">MEV</div>
-          <div class="marklbl" style="left:${mavPct}%;">MAV</div>
-          <div class="marklbl" style="left:${mrvPct}%;">MRV</div>
-        </div>
-        <div style="font-size:11px;color:${st.color};font-weight:600;margin-top:12px;">${st.label}</div>
+        <div class="zlbls">${marks.map(x=>`<span style="left:${pc(x.v)}%;"><b>${x.v}</b>${x.k}</span>`).join('')}</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:2px;line-height:1.4;">${zoneNote(sets, lm)}</div>
       </div>`;
   }).join('');
 
@@ -4600,13 +4642,20 @@ function renderMuscles(offset){
     ${focusCardHtml(periodMuscleStats(sessions, start, end))}
 
     <div class="card">
-      ${bodyDiagramSVG(statuses)}
+      ${bodyDiagramSVG(statuses, counts)}
       <div class="muscleLegend">
         <span><span class="dot" style="background:var(--dim-2);"></span>Under MEV</span>
-        <span><span class="dot" style="background:var(--ember);"></span>Optimal</span>
+        <span><span class="dot" style="background:var(--ember);"></span>Growth zone</span>
         <span><span class="dot" style="background:var(--brass);"></span>High</span>
         <span><span class="dot" style="background:var(--alarm);"></span>Over MRV</span>
       </div>
+      <details style="margin:0 2px 4px;"><summary style="font-size:12px;color:var(--ember);font-weight:700;cursor:pointer;">What do MEV, MAV and MRV mean?</summary>
+        <div style="font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:6px;">
+          <b style="color:var(--chalk);">MEV</b> is the fewest hard sets a week that still grows the muscle.<br>
+          <b style="color:var(--chalk);">MAV</b> is the sweet spot, where most growth comes from. The growth zone runs from MEV to a bit past MAV.<br>
+          <b style="color:var(--chalk);">MRV</b> is the most you can recover from. Past it, progress stalls.<br>
+          Counts are hard sets: warm-ups and easy sets are left out, and a muscle helping on another lift gets partial credit.</div></details>
+    </div>
     </div>
 
     <h2 class="section">Weekly sets by muscle <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--dim-2);">— primary 1.0, secondary 0.3\u20130.5</span></h2>
@@ -4624,6 +4673,15 @@ function renderMuscles(offset){
     ${unclassified.size ? `<p style="color:var(--dim-2);font-size:11.5px;margin-top:6px;">Not counted above (no muscle match): ${[...unclassified].join(', ')}.</p>` : ''}
     <p class="hint" style="color:var(--dim-2);font-size:11.5px;margin-top:14px;">MEV/MAV/MRV are commonly cited volume landmarks (Renaissance Periodization), not individually calibrated to you — treat them as a compass.</p>
   `;
+  document.querySelectorAll('#panel-muscles .bdm').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const m = el.dataset.m, lm = LANDMARKS[m], st = statuses[m]; if(!lm) return;
+      document.querySelectorAll('#panel-muscles .bdm').forEach(x=>x.classList.toggle('sel', x.dataset.m===m));
+      document.getElementById('bdReadout').innerHTML = `<b>${m}</b> \u00b7 ${Math.round(counts[m]*10)/10} sets \u00b7 <span style="color:${st.color};font-weight:700;">${st.label}</span><br><span style="font-size:11.5px;">MEV ${lm.mev} \u00b7 MAV ${lm.mav} \u00b7 MRV ${lm.mrv}</span>`;
+      const row = document.getElementById('mrow_'+m);
+      if(row){ row.scrollIntoView({behavior:'smooth', block:'center'}); row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); }
+    });
+  });
   document.querySelectorAll('#panel-muscles .focusChip').forEach(c=>{
     c.onclick = ()=>{ const m = c.dataset.focus; let f = getFocus();
       f = f.includes(m) ? f.filter(x=>x!==m) : f.concat(m).slice(-2); setFocus(f); renderMuscles(offset); try{ renderOverviewForPeriod(currentPeriod); }catch(e){} };
@@ -4633,49 +4691,41 @@ function renderMuscles(offset){
 }
 
 // simplified front-view schematic figure with muscle regions colored by status
-function bodyDiagramSVG(statuses){
-  const c = m => statuses[m] ? statuses[m].color : 'var(--surface-3)';
-  const neutral = 'var(--surface-3)';
-  return `
-  <div class="bodydiagram">
-    <svg width="150" height="270" viewBox="0 0 150 270">
-      <!-- head -->
-      <circle cx="75" cy="20" r="16" style="fill:${neutral};stroke:var(--hair-2);"/>
-      <!-- neck -->
-      <rect x="68" y="34" width="14" height="10" style="fill:${neutral};"/>
-      <!-- shoulders -->
-      <ellipse cx="45" cy="52" rx="14" ry="10" style="fill:${c('Shoulders')};"/>
-      <ellipse cx="105" cy="52" rx="14" ry="10" style="fill:${c('Shoulders')};"/>
-      <!-- chest -->
-      <rect x="52" y="48" width="46" height="34" rx="10" style="fill:${c('Chest')};"/>
-      <!-- abs -->
-      <rect x="58" y="82" width="34" height="46" rx="8" style="fill:${c('Abs')};"/>
-      <!-- biceps -->
-      <rect x="30" y="58" width="12" height="34" rx="6" style="fill:${c('Biceps')};"/>
-      <rect x="108" y="58" width="12" height="34" rx="6" style="fill:${c('Biceps')};"/>
-      <!-- triceps hint (thin strip behind biceps, forearm area) -->
-      <rect x="28" y="92" width="13" height="30" rx="6" style="fill:${c('Triceps')};"/>
-      <rect x="109" y="92" width="13" height="30" rx="6" style="fill:${c('Triceps')};"/>
-      <!-- back trace (visible at torso sides) -->
-      <rect x="44" y="50" width="8" height="70" rx="4" style="fill:${c('Back')};"/>
-      <rect x="98" y="50" width="8" height="70" rx="4" style="fill:${c('Back')};"/>
-      <!-- glutes -->
-      <ellipse cx="62" cy="136" rx="14" ry="12" style="fill:${c('Glutes')};"/>
-      <ellipse cx="88" cy="136" rx="14" ry="12" style="fill:${c('Glutes')};"/>
-      <!-- quads -->
-      <rect x="50" y="146" width="20" height="52" rx="9" style="fill:${c('Quads')};"/>
-      <rect x="80" y="146" width="20" height="52" rx="9" style="fill:${c('Quads')};"/>
-      <!-- hamstrings hint -->
-      <rect x="46" y="150" width="8" height="46" rx="4" style="fill:${c('Hamstrings')};"/>
-      <rect x="96" y="150" width="8" height="46" rx="4" style="fill:${c('Hamstrings')};"/>
-      <!-- calves -->
-      <rect x="52" y="202" width="16" height="40" rx="7" style="fill:${c('Calves')};"/>
-      <rect x="82" y="202" width="16" height="40" rx="7" style="fill:${c('Calves')};"/>
-      <!-- feet -->
-      <ellipse cx="60" cy="248" rx="11" ry="6" style="fill:${neutral};"/>
-      <ellipse cx="90" cy="248" rx="11" ry="6" style="fill:${neutral};"/>
-    </svg>
-  </div>`;
+function bodyDiagramSVG(statuses, counts){
+  counts = counts || {};
+  const col = m => statuses[m] ? statuses[m].color : 'var(--surface-3)';
+  const N = 'var(--surface-3)';
+  // one muscle shape: tappable, tagged with its muscle name. mirror=true draws the right-hand copy
+  const sh = (m, d, mirror) => `<path class="bdm" data-m="${m}" d="${d}" style="fill:${col(m)};" ${mirror?'transform="translate(120,0) scale(-1,1)"':''}/>`;
+  const both = (m, d) => sh(m,d,false)+sh(m,d,true);
+  const body = `
+    <circle cx="60" cy="17" r="12" style="fill:${N};"/><rect x="54" y="27" width="12" height="12" rx="3" style="fill:${N};"/>
+    <path d="M32 44 Q60 36 88 44 L92 70 L90 112 Q60 122 30 112 L28 70 Z" style="fill:${N};"/>
+    <rect x="14" y="50" width="16" height="78" rx="8" style="fill:${N};"/><rect x="90" y="50" width="16" height="78" rx="8" style="fill:${N};"/>
+    <path d="M32 112 Q60 120 88 112 L84 128 L36 128 Z" style="fill:${N};"/>
+    <rect x="35" y="126" width="22" height="104" rx="10" style="fill:${N};"/><rect x="63" y="126" width="22" height="104" rx="10" style="fill:${N};"/>`;
+  const front = `<svg viewBox="0 0 120 240" width="132" height="264" aria-label="Front view">${body}
+    ${both('Shoulders','M31 46 Q22 48 20 60 Q22 68 30 66 Q36 58 36 50 Z')}
+    ${both('Chest','M38 50 Q58 46 59 52 L59 70 Q48 78 37 68 Q35 58 38 50 Z')}
+    ${both('Biceps','M17 66 Q15 80 18 92 Q25 96 29 90 Q31 78 29 68 Q23 62 17 66 Z')}
+    ${['0','1','2'].map(i=>{const y=76+i*13; return sh('Abs',`M49 ${y} h9 v10 h-9 Z`,false)+sh('Abs',`M62 ${y} h9 v10 h-9 Z`,false);}).join('')}
+    ${both('Quads','M37 132 Q35 160 38 192 Q46 198 55 192 Q58 160 57 132 Q47 128 37 132 Z')}
+    ${both('Calves','M39 198 Q37 214 41 228 Q47 232 53 228 Q56 214 54 198 Q46 202 39 198 Z')}
+  </svg>`;
+  const back = `<svg viewBox="0 0 120 240" width="132" height="264" aria-label="Back view">${body}
+    ${sh('Back','M50 40 Q60 36 70 40 L84 52 L60 72 L36 52 Z',false)}
+    ${both('Back','M35 56 L58 74 L57 110 Q44 112 38 100 Q33 80 35 56 Z')}
+    ${both('Shoulders','M31 46 Q22 48 20 60 Q22 68 30 66 Q36 58 36 50 Z')}
+    ${both('Triceps','M17 66 Q15 80 18 94 Q25 98 29 92 Q31 78 29 68 Q23 62 17 66 Z')}
+    ${both('Glutes','M36 116 Q35 134 46 140 Q58 140 59 126 Q58 116 48 114 Z')}
+    ${both('Hamstrings','M37 142 Q35 166 38 190 Q46 196 55 190 Q58 166 57 144 Q47 140 37 142 Z')}
+    ${both('Calves','M39 196 Q36 214 41 230 Q47 234 53 230 Q57 214 54 196 Q46 200 39 196 Z')}
+  </svg>`;
+  return `<div class="bodydiagram" style="display:flex;justify-content:center;gap:10px;">
+      <div style="text-align:center;">${front}<div class="bdLbl">FRONT</div></div>
+      <div style="text-align:center;">${back}<div class="bdLbl">BACK</div></div>
+    </div>
+    <div id="bdReadout" class="bdReadout">Tap a muscle to see its weekly sets.</div>`;
 }
 
 /* ---------------- EXERCISES ---------------- */

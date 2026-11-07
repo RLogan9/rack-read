@@ -538,6 +538,7 @@
 
     <!-- ============ EXERCISES ============ -->
     <section class="panel" id="panel-exercises" data-panel="exercises">
+      <div id="exRotation"></div>
       <h2 class="section">By exercise</h2>
       <div class="searchwrap">
         <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -616,7 +617,8 @@
       <div class="profileField"><label>Date</label><input type="date" id="buildDate"></div>
     </div>
     <button class="btn ghost" id="buildStartBtn" style="width:100%;">Start</button>
-    <div id="buildForm" style="margin-top:14px;overflow-x:hidden;min-width:0;"></div>
+    <div style="text-align:right;margin-top:8px;"><button type="button" data-rpeguide style="background:none;border:none;color:var(--ember);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:4px 0;">RPE guide \u24d8</button></div>
+    <div id="buildForm" style="margin-top:6px;overflow-x:hidden;min-width:0;"></div>
     <textarea id="sessionNotes" class="pasteArea" placeholder="Session notes (optional) — how it felt, energy, sleep, anything worth remembering…" style="min-height:60px;margin-top:10px;display:none;"></textarea>
     <button class="btn primary" id="buildSaveBtn" style="width:100%;margin-top:14px;display:none;">Save session</button>
     <div class="toast" id="buildMsg"></div>
@@ -706,6 +708,21 @@
   <p class="eyebrow" style="margin:6px 0 6px;">Plates you have (tap to switch off)</p>
   <div class="chipRow" id="plSizeChips"></div>
   <div id="plResult"></div>
+</div>
+
+<!-- ---------- RPE guide ---------- -->
+<div class="scrim" id="scrimRpe" style="z-index:44;"></div>
+<div class="sheet" id="sheetRpe" style="z-index:45;">
+  <div class="handle"></div>
+  <button class="iconbtn sheet-close" id="closeRpe" style="position:absolute;top:14px;right:16px;">
+    <svg class="icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+  <h3>RPE guide</h3>
+  <p style="color:var(--dim);font-size:12.5px;margin:-4px 0 12px;">RPE = how hard the set was. Count the reps you <b>could</b> still have done (RIR) and subtract from 10. Be honest — most people under-rate by 1–2.</p>
+  <div id="rpeRows"></div>
+  <p class="eyebrow" style="margin:14px 0 6px;">Which sets count toward weekly volume?</p>
+  <div class="chipRow" id="rpeCutoffChips" style="margin-bottom:6px;"></div>
+  <p id="rpeCutoffNote" style="color:var(--dim);font-size:12px;margin:0;"></p>
 </div>
 
 <!-- ---------- exercise detail sheet ---------- -->
@@ -1606,7 +1623,8 @@ const MUSCLE_RULES = [
   ['Chest',       ['bench','chest','fly','flye','pec','dip','push up','push-up','pushup','incline press','decline press','flat press'], {Chest:1.0, Triceps:0.5, Shoulders:0.3}],
   ['Back',        ['row','pulldown','pull up','pull-up','pullup','lat ','back extension','shrug','dead hang'], {Back:1.0, Biceps:0.5}],
   ['RearDelt',    ['rear delt','face pull','reverse fly'],      {Shoulders:1.0, Back:0.3}],
-  ['Shoulders',   ['shoulder press','shoulder raise','ohp','overhead press','military press','lateral raise','front raise','arnold'], {Shoulders:1.0, Triceps:0.5}],
+  ['Delts (raises)', ['shoulder raise','lateral raise','front raise','side raise','upright row'], {Shoulders:1.0}], // raises don't load triceps
+  ['Shoulders',   ['shoulder press','ohp','overhead press','military press','arnold'], {Shoulders:1.0, Triceps:0.5}],
   ['Triceps',     ['tricep','pushdown','skull crush','close grip','overhead extension','kickback'], {Triceps:1.0}],
   ['Biceps',      ['curl'],                                     {Biceps:1.0}], // checked after leg curl above
   ['Abs',         ['crunch','sit up','sit-up','situp','plank','ab wheel','oblique',' abs','ab crunch','leg raise','toe touch'], {Abs:1.0}],
@@ -1620,25 +1638,64 @@ function classifyMuscle(name){
   if(/press/.test(n) && /(incline|decline|flat)/.test(n) && !/(shoulder|overhead|military|leg|calf)/.test(n)){
     return {Chest:1.0, Triceps:0.5, Shoulders:0.3};
   }
+  // Specific patterns checked BEFORE the keyword list so a stray word can't steal them:
+  // "Chest Supported Row" is a back exercise (the chest is just the pad), "Rear Delt Fly" is
+  // a rear delt exercise (not chest fly), "Narrow Grip Bench" must not match "row".
+  if(/upright row/.test(n)) return {Shoulders:1.0};
+  if(/\b(rear|reverse|posterior)\b.*\b(fly|flye|flys|flyes|delts?|pec deck)\b|\brear delt|\breverse pec/.test(n)) return {Shoulders:1.0, Back:0.3};
+  if(/\brows?\b|\bt-?bar\b|pull[- ]?overs?\b|pull[- ]?downs?\b|\bchin[- ]?ups?\b|\bpull[- ]?ups?\b|\blat\b/.test(n) && !/(tricep|push)/.test(n)) return {Back:1.0, Biceps:0.5};
   for(const [label, keys, weights] of MUSCLE_RULES){
     for(const k of keys){ if(n.includes(k)) return weights; }
   }
   return null;
 }
+// How much one logged set counts toward weekly hard-set volume (MEV/MAV/MRV).
+// Warm-ups and easy ramp-up sets (RPE under 6, i.e. 4+ reps in reserve) don't stimulate growth.
+function setVolumeCredit(row){
+  if(row.isWarmup) return 0;
+  const r = parseFloat(row.rpe);
+  if(!isNaN(r) && r>0 && r<effRpeMin()) return 0;
+  return 1;
+}
 // approximate weekly set-volume landmarks (RP-style), for general guidance only
 const LANDMARKS = {
   Chest:      {mev:8,  mav:16, mrv:22},
-  Back:       {mev:10, mav:18, mrv:25},
+  Back:       {mev:8,  mav:18, mrv:25},
   Shoulders:  {mev:8,  mav:18, mrv:26},
   Biceps:     {mev:8,  mav:16, mrv:26},
   Triceps:    {mev:6,  mav:12, mrv:18},
   Quads:      {mev:8,  mav:14, mrv:20},
-  Hamstrings: {mev:6,  mav:12, mrv:20},
-  Glutes:     {mev:4,  mav:10, mrv:16},
+  Hamstrings: {mev:4,  mav:12, mrv:20},
+  Glutes:     {mev:0,  mav:10, mrv:16},
   Calves:     {mev:8,  mav:14, mrv:20},
   Abs:        {mev:0,  mav:18, mrv:25},
 };
 const MUSCLE_ORDER = ['Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Abs'];
+
+/* ---------------- stretch-loaded exercises ----------------
+   Lifts where the hardest part of the rep happens with the muscle lengthened.
+   Pattern is tested against the lower-cased name; first match wins. */
+const STRETCH_RULES = [
+  [/overhead.*(tricep|extension)|tricep.*overhead|skull ?crusher|lean.*(over)?head.*extension/, 'Triceps', 'Long head stretched overhead'],
+  [/pull-?over/,                                   'Back',      'Lats loaded in a full overhead stretch'],
+  [/straight.?arm pull|lat pulldown|wide.?grip pull/, 'Back',   'Let the lats stretch fully at the top'],
+  [/incline.*curl|bayesian|preacher|spider/,        'Biceps',    'Biceps stretched behind or in front of the body'],
+  [/incline.*(press|bench|fl(y|ye)s?)|pec (fly|deck|dec)|cable fl(y|ye)s?|(db|dumbbell) fl(y|ye)s?|chest fl(y|ye)/, 'Chest', 'Chest open and loaded at the bottom'],
+  [/seated.*leg curl|romanian|rdl|stiff.?leg|good morning/, 'Hamstrings', 'Hamstrings loaded in the stretched (hips flexed) position'],
+  [/cable.*lateral|lateral.*cable|behind.*lateral/, 'Shoulders', 'Cable keeps tension on the delt at the bottom'],
+  [/hack squat|bulgarian|split squat|sissy|deep squat/, 'Quads', 'Deep knee bend loads the quads lengthened'],
+  [/calf raise|calf press/,                         'Calves',    'Pause in the full stretch at the bottom'],
+];
+function stretchInfo(name){
+  const n = String(name||'').toLowerCase();
+  for(const [re, muscle, why] of STRETCH_RULES) if(re.test(n)) return {muscle, why};
+  return null;
+}
+const STRETCH_SUGGEST = {
+  Chest:'Incline DB Press, Pec Fly or Cable Fly', Back:'Lat Pullover or a full-stretch Lat Pulldown', Shoulders:'Cable Lateral Raise',
+  Biceps:'Incline Dumbbell Curl or Preacher Curl', Triceps:'Overhead Tricep Extension', Quads:'Hack Squat or Bulgarian Split Squat',
+  Hamstrings:'Seated Leg Curl or Romanian Deadlift', Calves:'Standing Calf Raise (pause at the bottom)'
+};
 
 
 function toastEl(el, ok, msg, icon){
@@ -2278,7 +2335,39 @@ function lastTimeBySide(name){
   }
   return found;
 }
+const ISO_RE = /curl|raise|fly|flye|extension|pushdown|calf|pec deck|kickback|face pull|shrug/i;
+function repRangeFor(name){ return ISO_RE.test(name) ? [8,12] : [6,10]; }
+const fmtKg = v => (Math.round(v*4)/4).toString();
+// double progression: stay on a weight until every working set reaches the top of the rep range, then add weight
+function progressionFor(name){
+  const occs = DATA.exerciseMap && DATA.exerciseMap.get(name);
+  if(!occs || !occs.length) return null;
+  const sets = occs[occs.length-1].sets.filter(st=>!st.side);
+  if(!sets.length) return null;
+  const bw = sets.some(st=>st.bw);
+  const ref = st => bw ? (st.add||0) : st.kg;
+  const top = Math.max(...sets.map(ref));
+  const working = sets.filter(st=>ref(st) >= top*0.9 - 0.01);
+  const [lo,hi] = repRangeFor(name);
+  const reps = working.map(st=>st.reps), minR = Math.min(...reps), maxR = Math.max(...reps);
+  const rp = working.map(st=>parseFloat(st.rpe)).filter(v=>v>0);
+  const avgRpe = rp.length ? rp.reduce((a,b)=>a+b,0)/rp.length : null, maxRpe = rp.length ? Math.max(...rp) : null;
+  const inc = 2.5;
+  const w = (v)=> bw ? `+${fmtKg(Math.max(0,v))} kg` : `${fmtKg(v)} kg`;
+  let text;
+  if(minR >= hi) text = `Every set hit ${hi}+. Add weight: ${w(top+inc)} for ${lo}+ reps.`;
+  else if(avgRpe!=null && avgRpe<=7 && minR>=lo) text = `Last time felt easy (RPE ${Math.round(avgRpe*10)/10}). Add weight: ${w(top+inc)}.`;
+  else if(!bw && reps.filter(r=>r<lo).length >= Math.ceil(reps.length/2)) text = `Reps fell short of ${lo}. Drop to ${fmtKg(Math.round(top*0.95/2.5)*2.5)} kg and rebuild to ${lo}+.`;
+  else if(maxRpe!=null && maxRpe>=9.5) text = `Hold ${w(top)}. Beat ${maxR+1} reps on set 1 and stop at RPE 9.`;
+  else text = `Hold ${w(top)}. Add a rep to each set (aim ${Math.min(hi, minR+1)}+).`;
+  return {text, lo, hi};
+}
 function lastTimeHint(name){
+  const base = lastTimeHintBase(name);
+  let pg = null; try{ pg = progressionFor(name); }catch(e){}
+  return pg ? `${base}<br><span style="color:var(--ember);font-weight:700;">Today:</span> ${pg.text} <span style="color:var(--dim-2);">(${pg.lo}\u2013${pg.hi} reps)</span>` : base;
+}
+function lastTimeHintBase(name){
   const bySide = lastTimeBySide(name);
   if(!bySide.L && !bySide.R && !bySide.none) return 'No history yet for this grip.';
   if(bySide.L || bySide.R){
@@ -2297,7 +2386,7 @@ function buildExGroupShellHtml(name, unilateral, grip, bw){
   const hintId = 'gripHint_'+(gripHintCounter++);
   return `
     <div class="buildExGroup" data-exercise="${name.replace(/"/g,'&quot;')}" data-unilateral="${unilateral?'1':'0'}" data-grip="${grip}" data-bw="${bw?'1':'0'}">
-      <div class="exHead">${name}${unilateral?' <span class="uniTag">1side</span>':''}<span class="exBtns"><button class="plateChip" type="button" title="Plate calculator">Plates</button><button class="ssBtn" type="button" title="Superset this exercise with the one below it">Superset</button><button class="rmBtn rmExGroupBtn" type="button" aria-label="Remove exercise"><svg class="icon" style="width:16px;height:16px;" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6h12Z"/></svg></button></span></div>
+      <div class="exHead">${name}${unilateral?' <span class="uniTag">1side</span>':''}${stretchInfo(name)?' <span class="uniTag" style="color:var(--ember);" title="'+stretchInfo(name).why.replace(/"/g,'')+'">stretch</span>':''}<span class="exBtns"><button class="plateChip" type="button" title="Plate calculator">Plates</button><button class="ssBtn" type="button" title="Superset this exercise with the one below it">Superset</button><button class="rmBtn rmExGroupBtn" type="button" aria-label="Remove exercise"><svg class="icon" style="width:16px;height:16px;" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6h12Z"/></svg></button></span></div>
       <div class="chipRow gripChipRow">
         ${GRIP_OPTIONS.map(g=>`<div class="chip gripChip${g===grip?' active':''}" data-grip-choice="${g}">${g==='None'?'Standard':g}</div>`).join('')}
         <div class="chip bwChip${bw?' active':''}" title="Bodyweight exercise: enter extra weight only">Bodyweight</div>
@@ -2524,7 +2613,7 @@ function weekStartLocal(){ const d = new Date(); d.setHours(0,0,0,0); d.setDate(
 function weekMuscleCounts(sessions, since){
   const c = {};
   for(const s of sessions){ if(s.date < since) continue;
-    for(const r of s.rows){ if(r.isWarmup) continue;
+    for(const r of s.rows){ if(!setVolumeCredit(r)) continue;
       const w = classifyMuscle(r.exercise); if(w) for(const m in w) c[m] = (c[m]||0)+w[m]; } }
   return c;
 }
@@ -2544,6 +2633,7 @@ function wkBarHtml(muscle, count){
 function filledSetCount(row, bwOn){
   const v = sel => { const el = row.querySelector(sel); return el && el.value!=='' && !isNaN(parseFloat(el.value)); };
   if(row.dataset.warmup==='1') return 0;
+  const rp = row.querySelector('.bsRpe'); if(rp && rp.value!=='' && parseFloat(rp.value)>0 && parseFloat(rp.value)<effRpeMin()) return 0;
   if(row.dataset.unilateral==='1') return (v('.bsKgL')&&v('.bsRepsL')?1:0) + (v('.bsKgR')&&v('.bsRepsR')?1:0);
   return v('.singleFields .bsReps') && (bwOn || v('.singleFields .bsKg')) ? 1 : 0;
 }
@@ -2621,6 +2711,61 @@ function renderPlates(){
     <div class="plBar"><div class="stub"></div>${bars}</div>
     <p class="hint" style="margin:0;">${r.short>0.01 ? `Closest you can load is ${r.loaded} kg (${r.short} kg short with these plates).` : `Total ${r.loaded} kg.`}</p>`;
 }
+/* ---------------- RPE guide + hard-set cutoff ---------------- */
+const RPE_GUIDE = [
+  {r:10,  rir:'0',    t:'Max effort',        d:'Nothing left. Could not have done another rep, even with perfect form.'},
+  {r:9.5, rir:'0\u20130.5', t:'Almost max',  d:'Maybe half a rep left, or you could not have added weight.'},
+  {r:9,   rir:'1',    t:'Very hard',         d:'One more rep was possible. Bar speed clearly slowed on the last rep.'},
+  {r:8.5, rir:'1\u20132', t:'Hard',          d:'One for sure, maybe two more. Grinding the last rep or two.'},
+  {r:8,   rir:'2',    t:'Hard, controlled',  d:'Two more reps in the tank. Last reps slower but clean.'},
+  {r:7,   rir:'3',    t:'Moderate',          d:'Three left. Reps feel solid; you could chat between them.'},
+  {r:6,   rir:'4',    t:'Light work',        d:'Four left. Bar moves fast. Closer to a warm-up than a growth set.'},
+  {r:5,   rir:'5+',   t:'Easy / ramp-up',    d:'Five or more left. Warm-up or a very light set.'},
+];
+const RPE_CUTOFFS = [
+  {v:6, label:'RPE 6+', note:'Default: anything within about 4 reps of failure counts as a hard set.'},
+  {v:7, label:'RPE 7+', note:'Stricter, Nippard-style: only sets within about 3 reps of failure count.'},
+  {v:8, label:'RPE 8+', note:'Strictest: only sets within about 2 reps of failure count.'},
+];
+function effRpeMin(){ try{ const v = parseFloat(localStorage.getItem('rr-eff-rpe')); if(RPE_CUTOFFS.some(c=>c.v===v)) return v; }catch(e){} return 6; }
+let lastRpeInput = null;
+document.addEventListener('focusin', e=>{ if(e.target.matches && e.target.matches('.bsRpe,.esRpe')) lastRpeInput = e.target; });
+function renderRpeGuide(){
+  const min = effRpeMin();
+  document.getElementById('rpeRows').innerHTML = RPE_GUIDE.map(g=>{
+    const counts = g.r >= min;
+    return `<button type="button" class="rpeRow" data-r="${g.r}" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:10px 12px;margin-bottom:7px;color:var(--chalk);font:inherit;cursor:pointer;">
+      <span class="num" style="min-width:38px;font-size:20px;font-weight:800;color:${counts?'var(--ember)':'var(--dim-2)'};">${g.r}</span>
+      <span style="flex:1;min-width:0;"><b style="font-size:13.5px;">${g.t}</b> <span style="color:var(--dim);font-size:11.5px;">\u00b7 ${g.rir} rep${g.rir==='1'?'':'s'} left</span><br><span style="color:var(--dim);font-size:12px;line-height:1.35;">${g.d}</span></span>
+      <span style="font-size:10.5px;font-weight:700;color:${counts?'var(--ember)':'var(--dim-2)'};white-space:nowrap;">${counts?'COUNTS':'SKIPPED'}</span>
+    </button>`;
+  }).join('');
+  document.getElementById('rpeCutoffChips').innerHTML = RPE_CUTOFFS.map(c=>`<div class="chip ${c.v===min?'active':''}" data-cut="${c.v}">${c.label}</div>`).join('');
+  document.getElementById('rpeCutoffNote').textContent = (RPE_CUTOFFS.find(c=>c.v===min)||{}).note + ' Warm-up sets never count. Sets with no RPE logged always count.';
+}
+function openRpeGuide(){ renderRpeGuide(); openSheet('sheetRpe','scrimRpe'); }
+document.addEventListener('click', e=>{
+  if(e.target.closest('[data-rpeguide]')){ e.preventDefault(); openRpeGuide(); }
+});
+document.getElementById('closeRpe').addEventListener('click', ()=>closeSheet('sheetRpe','scrimRpe'));
+document.getElementById('scrimRpe').addEventListener('click', ()=>closeSheet('sheetRpe','scrimRpe'));
+document.getElementById('rpeCutoffChips').addEventListener('click', e=>{
+  const c = e.target.closest('[data-cut]'); if(!c) return;
+  try{ localStorage.setItem('rr-eff-rpe', c.dataset.cut); }catch(err){}
+  renderRpeGuide();
+  if(typeof DATA!=='undefined' && DATA && DATA.sessions && document.getElementById('panel-muscles').innerHTML) { try{ renderMuscles(muscleWeekOffset||0); }catch(err){} }
+  try{ refreshBuildInsights(); }catch(err){}
+});
+// tap a row to fill the RPE box you were just editing
+document.getElementById('rpeRows').addEventListener('click', e=>{
+  const b = e.target.closest('.rpeRow'); if(!b) return;
+  if(lastRpeInput && document.body.contains(lastRpeInput)){
+    lastRpeInput.value = b.dataset.r;
+    lastRpeInput.dispatchEvent(new Event('input',{bubbles:true}));
+    closeSheet('sheetRpe','scrimRpe');
+  }
+});
+
 function openPlates(kg){
   if(kg) document.getElementById('plKg').value = kg;
   renderPlates();
@@ -2650,7 +2795,7 @@ document.getElementById('buildForm').addEventListener('click', e=>{
   const tickBtn = e.target.closest('.setno');
   if(tickBtn){
     const row = tickBtn.closest('.buildSetRow'), group = tickBtn.closest('.buildExGroup');
-    if(row.dataset.done==='1'){ row.dataset.done='0'; saveDraftLocal(); refreshBuildInsights(); return; }
+    if(row.dataset.done==='1'){ row.dataset.done='0'; delete row.dataset.doneAt; saveDraftLocal(); refreshBuildInsights(); return; }
     const uni = row.dataset.unilateral==='1', bwOn = group.dataset.bw==='1';
     const takeTarget = el => { if(el && !el.value && /^-?[\d.]+$/.test(el.placeholder||'')) el.value = el.placeholder; };
     if(!uni){ takeTarget(row.querySelector('.singleFields .bsKg')); takeTarget(row.querySelector('.singleFields .bsReps')); }
@@ -2658,7 +2803,7 @@ document.getElementById('buildForm').addEventListener('click', e=>{
     const ok = uni ? (has(row.querySelector('.bsKgL'))&&has(row.querySelector('.bsRepsL'))) || (has(row.querySelector('.bsKgR'))&&has(row.querySelector('.bsRepsR')))
                    : (has(row.querySelector('.singleFields .bsReps')) && (bwOn || has(row.querySelector('.singleFields .bsKg'))));
     if(!ok){ tickBtn.animate([{transform:'translateX(-3px)'},{transform:'translateX(3px)'},{transform:'none'}],{duration:180}); return; }
-    row.dataset.done = '1';
+    row.dataset.done = '1'; row.dataset.doneAt = String(Date.now());
     unlockAudio();
     if(group.dataset.linknext!=='1') startRest(row.dataset.warmup==='1' ? Math.min(45,restSecs) : restSecs);
     saveDraftLocal(); refreshBuildInsights();
@@ -2782,12 +2927,19 @@ document.getElementById('buildSaveBtn').addEventListener('click', async ()=>{
                      // sets (very common — e.g. 3x10 at the same top weight)
                      // don't collide on date+exercise+reps+kg and silently vanish
   const ssMap = computeSupersets();
+  // rest between ticked sets (seconds since the previous tick, 20s to 10min), in on-screen order
+  const restMap = new WeakMap(); { let prevAt = null;
+    document.querySelectorAll('#buildForm .buildSetRow').forEach(r=>{
+      const at = parseInt(r.dataset.doneAt,10); if(!at) return;
+      if(prevAt){ const sec = Math.round((at-prevAt)/1000); if(sec>=20 && sec<=600) restMap.set(r, sec); }
+      prevAt = at; }); }
   document.querySelectorAll('#buildForm .buildExGroup').forEach(group=>{
     const exercise = effectiveExerciseName(group.dataset.exercise, group.dataset.grip);
     const bwOn = group.dataset.bw==='1';
     group.querySelectorAll('.buildSetRow').forEach(row=>{
       const isWarmup = row.dataset.warmup === '1';
       const extra = {}; if(row.dataset.type) extra.type = row.dataset.type; if(ssMap.get(group)) extra.ss = ssMap.get(group);
+      if(restMap.get(row)) extra.rest = restMap.get(row);
       const isUni = row.dataset.unilateral === '1';
       const rpeVal = parseFloat(row.querySelector('.bsRpe').value);
       const rpe = (!isNaN(rpeVal) && rpeVal>0) ? rpeVal : undefined;
@@ -3040,6 +3192,174 @@ function getPeriodBounds(period, lastDate, offset){
   return {start:new Date(y,0,1), end:new Date(y+1,0,1), label:String(y)};
 }
 
+/* ---------------- plateau diagnosis ----------------
+   "Stalled" only means a lift has not set a new best in 3+ sessions. That has several very different
+   causes, and the right fix differs, so work out the likeliest cause first, in this order:
+   1) not training often enough  2) running spike  3) cutting  4) genuinely grinding (high RPE)  5) not progressing */
+function diagnosePlateau(o){
+  const {sessions, lastDate, stalled, kmPctChange, runSpike} = o;
+  const w5 = getPeriodBounds('week', lastDate, 5).start;
+  const recent = sessions.filter(s=>s.date>=w5);
+  const spw = recent.length/6;
+  let weeksWith2 = 0;
+  for(let i=0;i<6;i++){ const wb = getPeriodBounds('week', lastDate, i); if(sessions.filter(s=>s.date>=wb.start && s.date<wb.end).length>=2) weeksWith2++; }
+  const gaps = stalled.map(x=>x.gapDays).sort((a,b)=>a-b);
+  const medGap = gaps.length ? gaps[Math.floor(gaps.length/2)] : 0;
+  let perWeek = null; try{ const st = weightStats(weightTrendSeries(BW, 0.1), 14); if(st && st.perWeek!=null) perWeek = st.perWeek; }catch(e){}
+  if(perWeek==null && o.bwChange!=null) perWeek = o.bwChange; // fall back to this period's change
+  const cutting = perWeek!=null && perWeek <= -0.2;
+  const cutTxt = cutting ? ` You're also losing about ${Math.abs(perWeek).toFixed(1)} kg a week, which makes consistency matter more.` : '';
+  const rpes = []; const d14 = new Date(lastDate.getTime()-14*86400000);
+  for(const s of sessions) if(s.date>=d14) for(const r of s.rows){ const v = parseFloat(r.rpe); if(!r.isWarmup && v>0) rpes.push(v); }
+  const hardShare = rpes.length>=8 ? rpes.filter(v=>v>=9).length/rpes.length : null;
+  const n = new Set(stalled.map(x=>x.ex)).size;
+
+  if(spw < 2.5 || weeksWith2 < 4 || medGap > 10){
+    return {kind:'consistency', tone:'info',
+      head:`These aren't real plateaus. Training has been patchy.`,
+      why:`You averaged ${spw.toFixed(1)} sessions a week over the last 6 weeks, and only ${weeksWith2} of those 6 weeks had 2 or more. ${medGap>10 ? `Your stalled lifts are being trained about ${Math.round(medGap)} days apart, so the stimulus resets and numbers sit still.` : `That's not enough repeat exposure for most lifts to move.`} A deload would take away work you haven't been doing.${cutTxt}`,
+      actions:[`Book 3 fixed training days a week for the next 3 weeks. Missing one is fine, missing two in a week isn't.`,
+               `Repeat last session's weights and add 1 rep per set. Add weight only once the top of the rep range feels clean.`,
+               `Re-check this card in 3 weeks. If you hit 3 sessions a week and lifts still don't move, then we look at fatigue.`]};
+  }
+  if(runSpike){
+    return {kind:'running', tone:'info',
+      head:`Running jumped ${kmPctChange}% and your lifts are paying for it.`,
+      why:`Weekly distance grew faster than your recovery. Legs are usually hit first, but it drags upper body down too.`,
+      actions:[`Make 1 to 2 runs easy this week (you can hold a conversation).`,`Cut leg sets by about a third for one week. Keep upper body as is.`,`Build distance by 10% a week from here, not 25%+.`]};
+  }
+  if(cutting){
+    return {kind:'cut', tone:'info',
+      head:`Holding your lifts while losing weight is a win.`,
+      why:`${n} lift${n!==1?'s':''} flat while you drop ~${Math.abs(perWeek).toFixed(1)} kg a week is normal in a deficit. It's only a problem if your main lifts fall more than about 5%.`,
+      actions:[`Keep the same weights and match your reps. Add a rep only if it's easy.`,
+               `Keep protein around 1.8 to 2.2 g per kg, and keep the loss under about 0.5 to 1% of bodyweight a week.`,
+               `If main lifts drop for 2 weeks in a row while you're training 3 times a week, add 150 to 250 kcal on training days. No deload needed.`]};
+  }
+  if(hardShare!=null && hardShare>=0.5){
+    return {kind:'fatigue', tone:'alarm',
+      head:`You're consistent and grinding. This looks like fatigue.`,
+      why:`${Math.round(hardShare*100)}% of your recent working sets were RPE 9 or higher, and ${n} lifts have stopped moving at the same time.`,
+      actions:[`Take a lighter week: same exercises and weights, but about 40% fewer sets, stopping at RPE 7.`,`Sleep 7 to 9 hours and eat at maintenance that week.`,`Then restart at RPE 8 and build back up.`]};
+  }
+  return {kind:'progression', tone:'info',
+    head:`You're consistent but not progressing. Your effort or rep targets need to change.`,
+    why:`${n} lift${n!==1?'s':''} flat while training regularly and not grinding usually means the sets aren't hard enough or there's no rep target to beat.`,
+    actions:[`Pick a rep range per lift (for example 6 to 10). Stay on one weight until every set hits the top, then add weight.`,`Take the last set of each exercise to RPE 9.`,`Log RPE on every working set so the app can tell hard from easy.`]};
+}
+
+/* ---------------- COACH HELPERS: muscle stats, focus muscles, rotation, rest, weekly review ---------------- */
+function periodMuscleStats(sessions, start, end){
+  const counts = {}, prim = {}, stretch = {}, days = {};
+  MUSCLE_ORDER.forEach(m=>{ counts[m]=0; });
+  for(const s of sessions){
+    if(s.date<start || s.date>=end) continue;
+    for(const r of s.rows){
+      if(!setVolumeCredit(r)) continue;
+      const w = classifyMuscle(r.exercise); if(!w) continue;
+      for(const m in w) if(counts[m]!==undefined) counts[m] += w[m];
+      const pm = primaryMuscle(r.exercise);
+      if(pm){ prim[pm] = (prim[pm]||0)+1; if(stretchInfo(r.exercise)) stretch[pm] = (stretch[pm]||0)+1;
+        (days[pm] = days[pm]||new Set()).add(s.dayKey||s.date.toDateString()); }
+    }
+  }
+  return {counts, prim, stretch, days};
+}
+function getFocus(){ try{ const a = JSON.parse(localStorage.getItem('rr-focus')||'[]'); return Array.isArray(a) ? a.filter(m=>MUSCLE_ORDER.includes(m)).slice(0,2) : []; }catch(e){ return []; } }
+function setFocus(a){ try{ localStorage.setItem('rr-focus', JSON.stringify(a.slice(0,2))); }catch(e){} }
+function focusAdvice(m, sets, days){
+  const lm = LANDMARKS[m]; const d = days ? days.size : 0;
+  if(d===0) return `Not trained yet this week. Hit it in your next session.`;
+  if(d===1) return `Trained once. A second session this week with about ${Math.max(3, Math.min(6, Math.ceil(lm.mav/2 - sets/2)))} sets gets you to twice a week.`;
+  if(sets < lm.mev) return `Add ${Math.ceil(lm.mev-sets)} more sets to reach the minimum.`;
+  if(sets < lm.mav) return `${Math.ceil(lm.mav-sets)} sets from the optimal range.`;
+  return `On target this week.`;
+}
+function focusCardHtml(pst){
+  const focus = getFocus();
+  const chips = MUSCLE_ORDER.filter(m=>m!=='Abs').map(m=>`<div class="chip focusChip${focus.includes(m)?' active':''}" data-focus="${m}">${m}</div>`).join('');
+  const lines = focus.map(m=>{
+    const sets = Math.round((pst.counts[m]||0)*10)/10, d = pst.days[m] ? pst.days[m].size : 0;
+    return `<div style="padding:9px 0;border-top:1px solid var(--hair);">
+      <div style="display:flex;justify-content:space-between;font-size:13.5px;"><b>${m}</b><span class="num" style="color:${d>=2?'var(--ember)':'var(--brass)'};font-weight:700;">${d} session${d!==1?'s':''} · ${sets} sets</span></div>
+      <div style="color:var(--dim);font-size:12.5px;margin-top:3px;line-height:1.4;">${focusAdvice(m, pst.counts[m]||0, pst.days[m])}</div></div>`;
+  }).join('');
+  return `<div class="card">
+    <p class="eyebrow">Lagging muscle focus</p>
+    <p style="color:var(--dim);font-size:12.5px;margin:0 0 10px;line-height:1.4;">${focus.length ? 'Lagging muscles grow best hit 2 to 3 times a week.' : 'Pick up to 2 muscles to prioritise. For a V-taper that is usually Back and Shoulders.'}</p>
+    <div class="chipRow" style="flex-wrap:wrap;margin-bottom:6px;">${chips}</div>${lines}</div>`;
+}
+const ROTATE_ALT = {Back:'Chest Supported Row to T-Bar Row', Chest:'Incline Press to Flat DB Press', Shoulders:'Cable Lateral to Machine Lateral Raise',
+  Biceps:'Incline Curl to Preacher Curl', Triceps:'Overhead Extension to JM Press', Quads:'Hack Squat to Leg Press', Hamstrings:'Seated to Lying Leg Curl', Calves:'Standing to Seated Calf Raise'};
+// lifts you train regularly that have not set a new best e1RM in 6+ sessions and 8+ weeks
+function rotationDue(exerciseMap, nowMs){
+  const out = [];
+  for(const [ex, occs] of exerciseMap){
+    if(occs.length < 7) continue;
+    let max = 0, prIdx = 0;
+    occs.forEach((o,i)=>{ if(i===0 || o.e1rm > max*1.005){ prIdx = i; } if(o.e1rm>max) max = o.e1rm; });
+    const since = occs.length-1-prIdx;
+    const days = (occs[occs.length-1].date - occs[prIdx].date)/86400000;
+    const recent = (nowMs - occs[occs.length-1].date)/86400000 <= 28;
+    if(since>=6 && days>=56 && recent) out.push({ex, since, weeks:Math.round(days/7), pm:primaryMuscle(ex)});
+  }
+  return out.sort((a,b)=>b.since-a.since).slice(0,5);
+}
+function renderRotationCard(exerciseMap){
+  const host = document.getElementById('exRotation'); if(!host) return;
+  const due = rotationDue(exerciseMap, Date.now());
+  if(!due.length){ host.innerHTML = ''; return; }
+  host.innerHTML = `<div class="card" style="border-color:var(--brass);">
+    <p class="eyebrow" style="color:var(--brass);">Rotation due</p>
+    <p style="color:var(--dim);font-size:12.5px;margin:0 0 6px;line-height:1.4;">You train these regularly but they have not hit a new best in 6+ sessions and 2+ months. Swap for a close variation for 4 to 8 weeks, then come back and re-test.</p>
+    ${due.map(d=>`<div style="padding:8px 0;border-top:1px solid var(--hair);font-size:13.5px;"><b>${d.ex}</b> <span style="color:var(--dim);">· ${d.since} sessions, ${d.weeks} weeks</span>${d.pm && ROTATE_ALT[d.pm] ? `<div style="color:var(--dim);font-size:12px;margin-top:2px;">Try: ${ROTATE_ALT[d.pm]}</div>` : ''}</div>`).join('')}</div>`;
+}
+function fmtRest(sec){ sec = Math.round(sec); return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'); }
+function restStats(sessions){
+  const per = [];
+  for(const s of sessions){ const v = s.rows.map(r=>r.rest).filter(x=>x>0); if(v.length>=3) per.push({date:s.date, avg:v.reduce((a,b)=>a+b,0)/v.length, n:v.length}); }
+  return per.slice(-8);
+}
+function renderRestCard(){
+  const host = document.getElementById('restCard'); if(!host) return;
+  const per = restStats(DATA.sessions);
+  if(!per.length){ host.innerHTML = `<p class="eyebrow">Rest between sets</p><p style="color:var(--dim);font-size:12.5px;margin:0;line-height:1.4;">Tick each set when you finish it in the log and the app will track your average rest. Shorter rests over time save time without losing reps.</p>`; return; }
+  const last = per[per.length-1], prior = per.slice(0,-1);
+  const priorAvg = prior.length ? prior.reduce((a,b)=>a+b.avg,0)/prior.length : null;
+  const diff = priorAvg!=null ? last.avg-priorAvg : null;
+  const max = Math.max(...per.map(p=>p.avg));
+  const bars = per.map(p=>`<i style="flex:1;height:${Math.max(8,Math.round(p.avg/max*100))}%;background:var(--ember);border-radius:3px;opacity:.85;"></i>`).join('');
+  host.innerHTML = `<p class="eyebrow">Rest between sets</p>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;">
+      <div><div class="num" style="font-size:26px;font-weight:800;">${fmtRest(last.avg)}</div><div style="color:var(--dim);font-size:12px;">avg last session (${last.n} sets)</div></div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:44px;flex:1;max-width:160px;">${bars}</div></div>
+    <p style="color:var(--dim);font-size:12.5px;margin:10px 0 0;line-height:1.4;">${diff==null?'Keep logging to see your trend.':(Math.abs(diff)<10?'About the same as your previous sessions.':(diff<0?`${Math.round(-diff)}s shorter than your previous average.`:`${Math.round(diff)}s longer than your previous average.`))} Heavy compounds need 2 to 4 minutes. Isolation work can drop to 1 to 2.</p>`;
+}
+function weekReviewHtml(o){
+  const {sessions, cur, curSessions, prsCount, bwChange, diag} = o;
+  const pst = periodMuscleStats(sessions, cur.start, cur.end);
+  const mus = MUSCLE_ORDER.filter(m=>m!=='Abs');
+  const total = Math.round(mus.reduce((a,m)=>a+(pst.prim[m]||0),0));
+  const under = mus.filter(m=>LANDMARKS[m].mev>0 && (pst.counts[m]||0) < LANDMARKS[m].mev);
+  const best = mus.slice().sort((a,b)=>(pst.counts[b]||0)-(pst.counts[a]||0))[0];
+  const lackStretch = mus.filter(m=>(pst.prim[m]||0)>=4 && !(pst.stretch[m]));
+  const focus = getFocus().filter(m=>!(pst.days[m] && pst.days[m].size>=2));
+  const todo = [];
+  if(curSessions.length < 3) todo.push(`Plan 3 sessions next week. You logged ${curSessions.length}.`);
+  if(under.length) todo.push(`Add sets for ${under.join(', ')}. They finished below the minimum.`);
+  if(focus.length) todo.push(`Hit ${focus.join(' and ')} twice. ${focus.length>1?'They were':'It was'} trained fewer than 2 days.`);
+  if(lackStretch.length) todo.push(`Add a stretch-loaded lift for ${lackStretch.slice(0,3).join(', ')}.`);
+  if(diag) todo.push(diag);
+  if(!todo.length) todo.push(`Nothing to fix. Repeat the week and add a rep or a little weight where you can.`);
+  const kv = (v,l)=>`<div class="stat"><div class="v num">${v}</div><div class="l">${l}</div></div>`;
+  return `<div class="card">
+    <p class="eyebrow">Week in review</p>
+    <div class="statgrid">${kv(curSessions.length,'Sessions')}${kv(total,'Hard sets')}${kv(prsCount,'New marks')}${kv(bwChange==null?'–':(bwChange>0?'+':'')+bwChange.toFixed(1),'kg change')}</div>
+    <p style="color:var(--dim);font-size:12.5px;margin:2px 0 10px;line-height:1.4;">${best && pst.counts[best] ? `Most work: <b style="color:var(--chalk);">${best}</b> (${Math.round(pst.counts[best]*10)/10} sets).` : ''}</p>
+    <p class="eyebrow" style="margin:0 0 6px;">Fix next week</p>
+    <ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.5;color:var(--chalk);">${todo.slice(0,4).map(t=>`<li style="margin-bottom:5px;">${t}</li>`).join('')}</ol></div>`;
+}
+
 function renderOverviewForPeriod(period){
   currentPeriod = period;
   const {sessions, binHistory} = DATA;
@@ -3069,7 +3389,9 @@ function renderOverviewForPeriod(period){
       }
       const streak = stallStreak(entries);
       if(streak>=3 && entries[entries.length-1].date>=cur.start && entries[entries.length-1].date<cur.end){
-        stalled.push({ex, bin, streak});
+        const recentE = entries.slice(-(streak+1));
+        const gapDays = (recentE[recentE.length-1].date - recentE[0].date)/86400000/streak;
+        stalled.push({ex, bin, streak, gapDays});
       }
     }
   }
@@ -3136,14 +3458,23 @@ function renderOverviewForPeriod(period){
 
   let fatigueBanner = '';
   if(systemic){
-    let cause = '';
-    if(runSpike) cause = ` Running volume is also up ${kmPctChange}% this ${periodWord} — that's a plausible driver.`;
-    else if(bwChange!==null && bwChange<-0.5) cause = ` You're also down ${Math.abs(bwChange).toFixed(1)}kg this ${periodWord} — a deficit catching up with recovery is a plausible driver.`;
+    const dg = diagnosePlateau({sessions, lastDate, stalled, kmPctChange, runSpike, bwChange});
+    const col = dg.tone==='alarm' ? 'var(--alarm)' : 'var(--brass)';
     fatigueBanner = `
-      <div class="card" style="border-color:var(--alarm);background:rgba(229,72,77,0.08);">
-        <p class="eyebrow" style="color:var(--alarm);">Systemic fatigue signal</p>
-        <p class="coach-line"><b>${distinctStalledExercises.length} different lifts</b> (${distinctStalledExercises.join(', ')}) stalled this ${periodWord} at once. That's usually one problem, not ${distinctStalledExercises.length} — recovery capacity, not programming.${cause} Worth a deload or a few easier days before pushing weight anywhere.</p>
+      <div class="card" style="border-color:${col};background:${dg.tone==='alarm'?'rgba(229,72,77,0.08)':'rgba(217,164,65,0.08)'};">
+        <p class="eyebrow" style="color:${col};">Plateau check</p>
+        <p style="font-size:18px;line-height:1.3;font-weight:700;margin:0 0 8px;color:var(--chalk);">${dg.head}</p>
+        <p style="font-size:14px;line-height:1.5;margin:0 0 12px;color:var(--dim);">${dg.why}</p>
+        <p class="eyebrow" style="margin:0 0 6px;">What to do</p>
+        <ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.5;color:var(--chalk);">${dg.actions.map(a=>`<li style="margin-bottom:5px;">${a}</li>`).join('')}</ol>
+        <details style="margin-top:10px;"><summary style="font-size:12px;color:var(--dim);cursor:pointer;">${distinctStalledExercises.length} lifts flagged</summary><p style="font-size:12.5px;line-height:1.5;color:var(--dim);margin:6px 0 0;">${distinctStalledExercises.join(', ')}</p></details>
       </div>`;
+  }
+
+  let reviewCard = '';
+  if(period==='week'){
+    let dg = null; if(systemic){ try{ dg = diagnosePlateau({sessions, lastDate, stalled, kmPctChange, runSpike, bwChange}).head; }catch(e){} }
+    reviewCard = weekReviewHtml({sessions, cur, curSessions, prsCount:prs.length, bwChange, diag:dg});
   }
 
   let prHtml;
@@ -3188,6 +3519,8 @@ function renderOverviewForPeriod(period){
       </div>
     </div>
 
+    ${reviewCard}
+
     <div style="display:flex;gap:12px;">
       ${bwCard}
       ${runCard}
@@ -3198,6 +3531,7 @@ function renderOverviewForPeriod(period){
     <div class="card" id="calendarCard"></div>
     <div class="card" id="weightCard"></div>
     <div class="card" id="measCard"></div>
+    <div class="card" id="restCard"></div>
 
     <div class="card raised">
       <p class="eyebrow">Loaded volume — vs previous ${periodWord}</p>
@@ -3229,6 +3563,7 @@ function renderOverviewForPeriod(period){
   renderCalendarCard();
   renderWeightCard();
   renderMeasCard();
+  renderRestCard();
 }
 
 function renderBWCard(bwChange, periodWord){
@@ -3837,6 +4172,8 @@ function renderExerciseSheet(){
 
   // ---- muscles worked ----
   const split = muscleSplit(EXD.name);
+  const stInfo = stretchInfo(EXD.name);
+  const stretchHtml = stInfo ? `<div style="margin-top:10px;padding:9px 12px;border-radius:12px;background:rgba(255,90,44,.10);border:1px solid rgba(255,90,44,.30);font-size:12.5px;"><b style="color:var(--ember);">STRETCH-LOADED</b> <span style="color:var(--dim);">\u00b7 ${stInfo.why}. Control the bottom, don't bounce out of it.</span></div>` : '';
   document.getElementById('exMuscles').innerHTML = split ? `
     <div class="exBlock">
       <p class="eyebrow">Muscles worked</p>
@@ -3845,7 +4182,8 @@ function renderExerciseSheet(){
         <div><span class="dot" style="background:var(--ember);"></span><b>Primary</b> <span class="n">${split.primary.join(', ')||'–'}</span></div>
         ${split.secondary.length?`<div><span class="dot" style="background:rgba(255,90,44,0.38);"></span><b>Secondary</b> <span class="n">${split.secondary.join(', ')}</span></div>`:''}
       </div>
-    </div>` : '';
+      ${stretchHtml}
+    </div>` : (stretchHtml ? `<div class="exBlock">${stretchHtml}</div>` : '');
 
   // ---- chart with range ----
   const cur = EX_METRICS.find(m=>m.id===EXD.metric);
@@ -4182,7 +4520,7 @@ let muscleWeekOffset = 0;
 
 function statusFor(sets, lm){
   if(!lm) return {key:'none', label:'Tracked', color:'var(--dim)'};
-  if(sets < lm.mev) return {key:'under', label:'Under MEV', color:'var(--dim-2)'};
+  if(sets <= 0 || sets < lm.mev) return {key:'under', label:'Under MEV', color:'var(--dim-2)'};
   if(sets <= lm.mav) return {key:'ok', label:'Optimal', color:'var(--ember)'};
   if(sets <= lm.mrv) return {key:'high', label:'High', color:'var(--brass)'};
   return {key:'over', label:'Over MRV', color:'var(--alarm)'};
@@ -4198,12 +4536,15 @@ function renderMuscles(offset){
   const counts = {};
   MUSCLE_ORDER.forEach(m=>counts[m]=0);
   const unclassified = new Set();
+  const primSets = {}, stretchSets = {};
   let warmupSkipped = 0;
   for(const s of weekSessions){
     for(const row of s.rows){
       if(row.isWarmup){ warmupSkipped++; continue; } // warm-ups don't count toward MEV/MAV
+      const credit = setVolumeCredit(row); if(!credit){ warmupSkipped++; continue; } // easy ramp-up sets (RPE<6) skipped too
       const weights = classifyMuscle(row.exercise);
       if(!weights){ unclassified.add(row.exercise); continue; }
+      { const pm = primaryMuscle(row.exercise); if(pm){ primSets[pm] = (primSets[pm]||0)+1; if(stretchInfo(row.exercise)) stretchSets[pm] = (stretchSets[pm]||0)+1; } }
       for(const [muscle, w] of Object.entries(weights)){
         if(counts[muscle]===undefined) continue; // e.g. a muscle not in MUSCLE_ORDER
         counts[muscle] += w;
@@ -4222,7 +4563,7 @@ function renderMuscles(offset){
     const trackMax = lm.mrv * 1.15;
     const fillPct = Math.min(100, (sets/trackMax)*100);
     const mevPct = (lm.mev/trackMax)*100, mavPct=(lm.mav/trackMax)*100, mrvPct=(lm.mrv/trackMax)*100;
-    const mevHit = sets >= lm.mev;
+    const mevHit = sets > 0 && sets >= lm.mev;
     const checkIcon = '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;"><path d="M20 6L9 17l-5-5"/></svg>';
     const setsDisplay = Math.round(sets*10)/10;
     return `
@@ -4256,6 +4597,8 @@ function renderMuscles(offset){
       <button id="muscNext" ${canGoNext?'':'disabled'}>›</button>
     </div>
 
+    ${focusCardHtml(periodMuscleStats(sessions, start, end))}
+
     <div class="card">
       ${bodyDiagramSVG(statuses)}
       <div class="muscleLegend">
@@ -4268,10 +4611,23 @@ function renderMuscles(offset){
 
     <h2 class="section">Weekly sets by muscle <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--dim-2);">— primary 1.0, secondary 0.3\u20130.5</span></h2>
     <div class="card">${bars}</div>
-    ${warmupSkipped ? `<p style="color:var(--dim-2);font-size:11.5px;margin-top:-6px;">${warmupSkipped} warm-up set${warmupSkipped!==1?'s':''} excluded from these counts.</p>` : ''}
+    ${(()=>{
+      const rows = MUSCLE_ORDER.filter(m=>primSets[m]).map(m=>{
+        const tot = primSets[m], st = stretchSets[m]||0, lacking = tot>=4 && st===0;
+        return `<div style="padding:9px 0;border-top:1px solid var(--hair);">
+          <div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;"><b>${m}</b><span class="num" style="color:${lacking?'var(--brass)':(st?'var(--ember)':'var(--dim)')};font-weight:700;">${st} of ${tot} stretch-loaded</span></div>
+          ${lacking && STRETCH_SUGGEST[m] ? `<div style="color:var(--dim);font-size:11.5px;margin-top:3px;">None this week. Try: ${STRETCH_SUGGEST[m]}.</div>` : ''}
+        </div>`; }).join('');
+      return rows ? `<h2 class="section">Stretch-loaded work <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--dim-2);">\u2014 sets where the muscle is loaded lengthened</span></h2><div class="card" style="padding-top:2px;padding-bottom:2px;">${rows}</div>` : '';
+    })()}
+    <p style="color:var(--dim-2);font-size:11.5px;margin-top:-6px;">Counting hard sets only (RPE ${effRpeMin()}+).${warmupSkipped ? ` ${warmupSkipped} warm-up/easy set${warmupSkipped!==1?'s':''} left out.` : ''} <button type="button" data-rpeguide style="background:none;border:none;color:var(--ember);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;padding:0;">RPE guide</button></p>
     ${unclassified.size ? `<p style="color:var(--dim-2);font-size:11.5px;margin-top:6px;">Not counted above (no muscle match): ${[...unclassified].join(', ')}.</p>` : ''}
     <p class="hint" style="color:var(--dim-2);font-size:11.5px;margin-top:14px;">MEV/MAV/MRV are commonly cited volume landmarks (Renaissance Periodization), not individually calibrated to you — treat them as a compass.</p>
   `;
+  document.querySelectorAll('#panel-muscles .focusChip').forEach(c=>{
+    c.onclick = ()=>{ const m = c.dataset.focus; let f = getFocus();
+      f = f.includes(m) ? f.filter(x=>x!==m) : f.concat(m).slice(-2); setFocus(f); renderMuscles(offset); try{ renderOverviewForPeriod(currentPeriod); }catch(e){} };
+  });
   document.getElementById('muscPrev').onclick = ()=>renderMuscles(offset+1);
   if(canGoNext) document.getElementById('muscNext').onclick = ()=>renderMuscles(offset-1);
 }
@@ -4355,6 +4711,7 @@ function suggestFor(ex, occs, binHistory, stallStreak){
 
 function renderExercises(exerciseMap, binHistory, stallStreak){
   const exNames = Array.from(exerciseMap.keys());
+  try{ renderRotationCard(exerciseMap); }catch(e){}
   const filterInput = document.getElementById('exFilter');
   const chips = document.querySelectorAll('#sortChips .chip');
 
@@ -4712,6 +5069,7 @@ function renderHistory(sessions, binHistory, epley){
             <p class="eyebrow">Editing this exercise</p>
             <input type="text" id="editExName" class="editField" list="knownExercises" value="${escHtml(ex)}" placeholder="Exercise name">
             ${bwCheckHtml(panelBw)}
+            <div style="text-align:right;"><button type="button" data-rpeguide style="background:none;border:none;color:var(--ember);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:2px 0 6px;">RPE guide \u24d8</button></div>
             <div id="editSetList">${sets.map((st,i)=>setRowHtml(st,i)).join('')}</div>
             <button class="buildAddSetBtn" id="editAddSetBtn" type="button">+ Add set</button>
             <div style="display:flex;gap:8px;margin-top:10px;">

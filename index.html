@@ -492,6 +492,8 @@
   .calCell.blank{background:transparent;}
   .calCell.lift{background:rgba(255,90,44,.20);color:var(--chalk);font-weight:700;cursor:pointer;}
   .calCell.today{outline:1.5px solid var(--chalk);}
+  .calCell.plan{box-shadow:inset 0 0 0 1.5px var(--ember);} .calCell.miss{box-shadow:inset 0 0 0 1.5px var(--alarm);color:var(--alarm);}
+  .prLive{color:var(--ember);font-size:12.5px;font-weight:700;line-height:1.35;margin:2px 0 4px;} .prLive:empty{display:none;}
   .calCell .dots{display:flex;gap:3px;height:5px;}
   .calCell .dots i{width:5px;height:5px;border-radius:50%;display:block;}
   .wkBar{margin:0 0 10px;}
@@ -630,7 +632,7 @@
       <div class="profileField"><label>Date</label><input type="date" id="buildDate"></div>
     </div>
     <button class="btn ghost" id="buildStartBtn" style="width:100%;">Start</button>
-    <div style="text-align:right;margin-top:8px;"><button type="button" data-rpeguide style="background:none;border:none;color:var(--ember);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:4px 0;">RPE guide \u24d8</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span id="sessEst" style="color:var(--dim);font-size:12px;"></span><button type="button" data-rpeguide style="background:none;border:none;color:var(--ember);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:4px 0;">RPE guide \u24d8</button></div>
     <div id="buildForm" style="margin-top:6px;overflow-x:hidden;min-width:0;"></div>
     <textarea id="sessionNotes" class="pasteArea" placeholder="Session notes (optional) — how it felt, energy, sleep, anything worth remembering…" style="min-height:60px;margin-top:10px;display:none;"></textarea>
     <button class="btn primary" id="buildSaveBtn" style="width:100%;margin-top:14px;display:none;">Save session</button>
@@ -830,6 +832,17 @@
   <button class="btn ghost stravaBtn" id="stravaBtn" style="width:100%;">Connect Strava</button>
   <p id="stravaStatusLine" style="color:var(--dim);font-size:12px;margin:8px 0 0;"></p>
   <div class="toast" id="stravaMsg"></div>
+
+  <div class="divider"></div>
+
+  <div class="eyebrow">Google Calendar</div>
+  <p class="hint" style="margin-top:-6px;">Lets the app see your schedule to suggest a time and fit sessions around work. Read-only. In Google Calendar open Settings, pick your calendar, and copy the <b>Secret address in iCal format</b>. Paste it here. Treat the link like a password.</p>
+  <input type="url" id="calUrlInput" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;margin-bottom:8px;">
+  <div style="display:flex;gap:8px;">
+    <button class="btn primary" id="calSaveBtn" style="flex:1;">Connect</button>
+    <button class="btn ghost" id="calOffBtn" style="flex:1;">Disconnect</button>
+  </div>
+  <p id="calStatus" style="color:var(--dim);font-size:12.5px;margin:8px 0 0;line-height:1.4;"></p>
 
   <div class="divider"></div>
 
@@ -1791,7 +1804,7 @@ document.getElementById('fabLog').addEventListener('click', ()=>{
 });
 document.getElementById('closeLog').addEventListener('click', ()=>closeSheet('sheetLog','scrimLog'));
 document.getElementById('scrimLog').addEventListener('click', ()=>closeSheet('sheetLog','scrimLog'));
-document.getElementById('dataBtn').addEventListener('click', ()=>{ openSheet('sheetData','scrimData'); stravaStatus(); });
+document.getElementById('dataBtn').addEventListener('click', ()=>{ openSheet('sheetData','scrimData'); stravaStatus(); try{ renderCalStatus(); }catch(e){} });
 document.getElementById('closeData').addEventListener('click', ()=>closeSheet('sheetData','scrimData'));
 document.getElementById('scrimData').addEventListener('click', ()=>closeSheet('sheetData','scrimData'));
 
@@ -2406,6 +2419,7 @@ function buildExGroupShellHtml(name, unilateral, grip, bw){
       </div>
       <div class="bwHint" style="display:${bw?'block':'none'};font-size:11.5px;color:var(--dim-2);margin:-6px 0 8px;">Enter the <b>extra</b> weight only. Leave blank or 0 for plain bodyweight, negative if assisted. Your bodyweight is added for strength and volume.</div>
       <div class="lastTimeHint" id="${hintId}">${lastTimeHint(effectiveExerciseName(name, grip))}</div>
+      <div class="prLive"></div>
       <div class="wkBar"></div>
       <div class="buildSetList"></div>
       <button class="buildAddSetBtn" type="button">+ Add set</button>
@@ -2696,6 +2710,8 @@ function refreshBuildInsights(){
     const html = m ? wkBarHtml(m, (base[m]||0)+(draft[m]||0)) : '';
     if(el.dataset.sig !== html){ el.dataset.sig = html; el.innerHTML = html; }
   });
+  groups.forEach(updatePrLive);
+  updateSessEst();
 }
 // ---- plate calculator ----
 const PLATE_SIZES = [25,20,15,10,5,2.5,1.25];
@@ -3226,6 +3242,7 @@ function diagnosePlateau(o){
   for(const s of sessions) if(s.date>=d14) for(const r of s.rows){ const v = parseFloat(r.rpe); if(!r.isWarmup && v>0) rpes.push(v); }
   const hardShare = rpes.length>=8 ? rpes.filter(v=>v>=9).length/rpes.length : null;
   const n = new Set(stalled.map(x=>x.ex)).size;
+  const ret = (typeof strengthRetention==='function' && DATA && DATA.exerciseMap) ? strengthRetention(DATA.exerciseMap) : null;
 
   if(spw < 2.5 || weeksWith2 < 4 || medGap > 10){
     return {kind:'consistency', tone:'info',
@@ -3241,10 +3258,16 @@ function diagnosePlateau(o){
       why:`Weekly distance grew faster than your recovery. Legs are usually hit first, but it drags upper body down too.`,
       actions:[`Make 1 to 2 runs easy this week (you can hold a conversation).`,`Cut leg sets by about a third for one week. Keep upper body as is.`,`Build distance by 10% a week from here, not 25%+.`]};
   }
+  if(cutting && ret && ret.total>=3 && ret.slipping.length/ret.total>=0.4){
+    return {kind:'cut-slipping', tone:'alarm',
+      head:`Your lifts are dropping while you cut.`,
+      why:`${ret.slipping.length} of ${ret.total} main lifts are down more than 5% on a month ago (${ret.slipping.slice(0,3).map(x=>x.ex).join(', ')}). A small dip is normal in a deficit. This much suggests the deficit is too big.`,
+      actions:[`Add 150 to 250 kcal on training days, or slow the loss to about 0.5 kg a week.`,`Keep protein around 1.8 to 2.2 g per kg.`,`Keep training 3 days a week and re-check in 2 weeks.`]};
+  }
   if(cutting){
     return {kind:'cut', tone:'info',
       head:`Holding your lifts while losing weight is a win.`,
-      why:`${n} lift${n!==1?'s':''} flat while you drop ~${Math.abs(perWeek).toFixed(1)} kg a week is normal in a deficit. It's only a problem if your main lifts fall more than about 5%.`,
+      why:`${n} lift${n!==1?'s':''} flat while you drop ~${Math.abs(perWeek).toFixed(1)} kg a week is normal in a deficit.${ret && ret.total>=3 ? ` ${ret.total-ret.slipping.length} of ${ret.total} main lifts are holding or up on a month ago.` : ` It's only a problem if your main lifts fall more than about 5%.`}`,
       actions:[`Keep the same weights and match your reps. Add a rep only if it's easy.`,
                `Keep protein around 1.8 to 2.2 g per kg, and keep the loss under about 0.5 to 1% of bodyweight a week.`,
                `If main lifts drop for 2 weeks in a row while you're training 3 times a week, add 150 to 250 kcal on training days. No deload needed.`]};
@@ -3394,6 +3417,289 @@ function renderMobCard(){
     MOB = done ? MOB.filter(k=>k!==today) : MOB.concat(today).sort(); await saveMob(); renderMobCard(); };
 }
 
+/* ---------------- TRAINING ASSISTANT: today planner, plan days, strength check, heat view, live PR ---------------- */
+const PUSH_PULL_LEGS = {Push:['Chest','Shoulders','Triceps'], Pull:['Back','Biceps'], Legs:['Quads','Hamstrings','Calves']};
+const FALLBACK_EX = {Chest:'Incline DB Press', Back:'Lat Pulldown', Shoulders:'Cable Lateral Raise', Biceps:'Incline Dumbbell Curl',
+  Triceps:'Overhead Tricep Extension', Quads:'Hack Squat', Hamstrings:'Seated Leg Curl', Calves:'Standing Calf Raise'};
+const sameDay = (a,b)=>a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+const DOW_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function muscleLastDays(sessions){
+  const last = {}, t0 = new Date(); t0.setHours(0,0,0,0);
+  for(const s of sessions) for(const r of s.rows){ if(!setVolumeCredit(r)) continue; const pm = primaryMuscle(r.exercise); if(pm && (!last[pm] || s.date>last[pm])) last[pm] = s.date; }
+  const out = {}; for(const m in last){ const d = new Date(last[m]); d.setHours(0,0,0,0); out[m] = Math.round((t0-d)/864e5); }
+  return out;
+}
+function getPlanDays(){ try{ const a = JSON.parse(localStorage.getItem('rr-plan')||'[]'); return Array.isArray(a) ? a.filter(n=>n>=0&&n<=6) : []; }catch(e){ return []; } }
+function setPlanDays(a){ try{ localStorage.setItem('rr-plan', JSON.stringify(a)); }catch(e){} }
+function estimateMinutes(nSets, nEx){
+  const per = restStats(DATA.sessions||[]); const rest = per.length ? per[per.length-1].avg : (restSecs||90);
+  return Math.round((nSets*(40+rest) + nEx*120)/60);
+}
+// a long run today or yesterday makes heavy legs a bad idea
+function longRunRecently(){
+  const t0 = new Date(); t0.setHours(0,0,0,0); const y0 = new Date(t0.getTime()-864e5);
+  const sorted = RUNS.slice().sort((a,b)=>a.date-b.date);
+  for(let i=sorted.length-1;i>=0;i--){
+    const r = sorted[i]; if(!(sameDay(r.date,t0)||sameDay(r.date,y0))) continue;
+    const prev = sorted.slice(Math.max(0,i-5), i).map(x=>x.distanceKm); const avg = prev.length ? prev.reduce((a,b)=>a+b,0)/prev.length : 0;
+    if(r.distanceKm>=8 || (r.distanceKm>=5 && avg>0 && r.distanceKm>=1.25*avg)) return r;
+  }
+  return null;
+}
+function planSession(){
+  const sessions = DATA.sessions||[], ws = weekStartLocal(), we = new Date(ws.getTime()+7*864e5);
+  const pst = periodMuscleStats(sessions, ws, we), last = muscleLastDays(sessions), focus = getFocus(), run = longRunRecently();
+  const t0 = new Date(); t0.setHours(0,0,0,0); const yest = new Date(t0.getTime()-864e5);
+  let best = null;
+  for(const [g, allMs] of Object.entries(PUSH_PULL_LEGS)){
+    // only plan muscles you actually train: skip any not trained in the last 4 weeks (e.g. legs while injured)
+    const ms = allMs.filter(m=>last[m]!=null && last[m]<=28);
+    if(!ms.length) continue;
+    let score = 0; const need = {};
+    for(const m of ms){
+      const lm = LANDMARKS[m], have = pst.counts[m]||0, def = Math.max(0, lm.mav-have); need[m] = def;
+      score += Math.min(def,10) * (focus.includes(m)?1.5:1) * ((last[m]>=3)?1.25:0.8);
+    }
+    score /= ms.length;
+    if(sessions.some(s=>sameDay(s.date,yest) && s.rows.some(r=>ms.includes(primaryMuscle(r.exercise))))) score *= 0.5;
+    if(g==='Legs' && run) score *= 0.4;
+    if(!best || score>best.score) best = {g, ms, score, need};
+  }
+  if(!best || best.score<=0.5) return {done:true};
+  const cut = Date.now()-56*864e5, items = [];
+  const muscles = best.ms.filter(m=>best.need[m]>=2).sort((a,b)=>best.need[b]-best.need[a]);
+  let total = 0;
+  for(const m of muscles){
+    const cands = [...DATA.exerciseMap.entries()].filter(([ex,o])=>primaryMuscle(ex)===m && o[o.length-1].date.getTime()>=cut).sort((a,b)=>b[1].length-a[1].length).map(x=>x[0]);
+    const chosen = []; if(cands[0]) chosen.push(cands[0]);
+    const sc = cands.find(ex=>stretchInfo(ex) && ex!==cands[0]) || cands[1]; if(sc) chosen.push(sc);
+    if(!chosen.length) chosen.push(FALLBACK_EX[m]);
+    if(chosen.length<2 && !chosen.some(e=>stretchInfo(e)) && FALLBACK_EX[m] && stretchInfo(FALLBACK_EX[m]) && !chosen.includes(FALLBACK_EX[m])) chosen.push(FALLBACK_EX[m]);
+    const want = Math.min(Math.round(best.need[m]), 10), per = Math.max(2, Math.min(4, Math.round(want/chosen.length)));
+    for(const name of chosen){ if(total+per>20 || items.length>=6) break; items.push({name, sets:per, muscle:m, stretch:!!stretchInfo(name)}); total += per; }
+  }
+  if(!items.length) return {done:true};
+  const reasons = muscles.slice(0,2).map(m=>`${m} is ${Math.round(best.need[m])} sets short of the sweet spot${last[m]!=null?`, last trained ${last[m]===0?'today':last[m]+' day'+(last[m]===1?'':'s')+' ago'}`:''}.`);
+  return {group:best.g, items, total, minutes:estimateMinutes(total, items.length), reasons, run, legsSkipped: !!run && best.g!=='Legs'};
+}
+function startPlannedSession(items){
+  document.getElementById('fabLog').click();
+  const chip = document.querySelector('#logModeChips .chip[data-mode="session"]'); if(chip) chip.click();
+  if(!document.querySelectorAll('#buildForm .buildExGroup').length){
+    const sel = document.getElementById('buildRoutineSelect');
+    if([...sel.options].some(o=>o.value==='__freestyle')) sel.value = '__freestyle';
+    document.getElementById('buildStartBtn').click();
+  }
+  const row = document.querySelector('#buildForm .buildAddExRow'); if(!row) return;
+  items.forEach(it=>row.insertAdjacentHTML('beforebegin', buildExGroupHtml(it.name, it.sets, 0, false, 'None')));
+  saveDraftLocal();
+}
+/* ---------------- Google Calendar schedule (read-only, via the calendar-proxy function) ---------------- */
+const CAL_URL_KEY = 'rr-cal-url', CAL_CACHE_KEY = 'rr-cal-cache';
+let SCHED = [], SCHED_OK = false, SCHED_ERR = '', schedTried = false;
+function getCalUrl(){ try{ return localStorage.getItem(CAL_URL_KEY) || ''; }catch(e){ return ''; } }
+function parseSchedEvent(e){
+  if(e.allDay){ const [ys,ms,ds] = e.start.split('-').map(Number), [ye,me,de] = e.end.split('-').map(Number);
+    return {title:e.title, allDay:true, start:new Date(ys,ms-1,ds), end:new Date(ye,me-1,de)}; }
+  return {title:e.title, allDay:false, start:new Date(e.start), end:new Date(e.end)};
+}
+async function fetchSchedule(force){
+  const url = getCalUrl();
+  if(!url){ SCHED = []; SCHED_OK = false; SCHED_ERR = ''; return {ok:false, none:true}; }
+  try{
+    if(!force){ const c = JSON.parse(localStorage.getItem(CAL_CACHE_KEY)||'null');
+      if(c && c.url===url && Date.now()-c.ts < 15*60e3){ SCHED = c.events.map(parseSchedEvent); SCHED_OK = true; SCHED_ERR = ''; return {ok:true, n:SCHED.length, cached:true}; } }
+    const t0 = new Date(); t0.setHours(0,0,0,0);
+    const res = await fetch(SUPABASE_URL + '/functions/v1/calendar-proxy', {
+      method:'POST', headers:{'Content-Type':'application/json', apikey:SUPABASE_ANON_KEY},
+      body: JSON.stringify({url, from:t0.toISOString(), to:new Date(t0.getTime()+8*864e5).toISOString()}) });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || ('Calendar service returned ' + res.status));
+    try{ localStorage.setItem(CAL_CACHE_KEY, JSON.stringify({url, ts:Date.now(), events:data.events})); }catch(e){}
+    SCHED = data.events.map(parseSchedEvent); SCHED_OK = true; SCHED_ERR = '';
+    return {ok:true, n:SCHED.length};
+  }catch(e){
+    SCHED_OK = false; SCHED_ERR = (e && e.message) || 'Could not reach the calendar.';
+    try{ const c = JSON.parse(localStorage.getItem(CAL_CACHE_KEY)||'null'); if(c && c.url===url){ SCHED = c.events.map(parseSchedEvent); SCHED_OK = true; } }catch(_e){}  // fall back to last good copy
+    return {ok:false, error:SCHED_ERR};
+  }
+}
+function ensureSchedule(){
+  if(schedTried || !getCalUrl()) return; schedTried = true;
+  fetchSchedule(false).then(()=>{ try{ renderTodayCard(); renderPlanCard(); }catch(e){} });
+}
+const fmtT = d => d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}).replace(' ','').toLowerCase();
+const DAY_START_H = 5, DAY_END_H = 21;
+// gaps of 30+ minutes between 5am and 9pm that no event covers (and that are still in the future for today)
+function freeWindows(day){
+  const ws = new Date(day); ws.setHours(DAY_START_H,0,0,0); const we = new Date(day); we.setHours(DAY_END_H,0,0,0);
+  let start = ws; const now = new Date();
+  if(sameDay(day, now) && now > ws){ start = new Date(Math.ceil(now.getTime()/9e5)*9e5); }
+  if(start >= we) return [];
+  const busy = SCHED.filter(e=>!e.allDay && e.end>start && e.start<we).map(e=>[Math.max(e.start.getTime(),start.getTime()), Math.min(e.end.getTime(),we.getTime())]).sort((a,b)=>a[0]-b[0]);
+  const merged = []; for(const b of busy){ const l = merged[merged.length-1]; if(l && b[0]<=l[1]) l[1] = Math.max(l[1],b[1]); else merged.push([...b]); }
+  const wins = []; let cur = start.getTime();
+  for(const [bs,be] of merged){ if(bs-cur>=30*60e3) wins.push({start:new Date(cur), end:new Date(bs), mins:Math.round((bs-cur)/6e4)}); cur = Math.max(cur,be); }
+  if(we.getTime()-cur>=30*60e3) wins.push({start:new Date(cur), end:we, mins:Math.round((we.getTime()-cur)/6e4)});
+  return wins;
+}
+const longestWindow = day => freeWindows(day).reduce((a,w)=>Math.max(a,w.mins),0);
+function calendarForToday(pl){
+  if(!getCalUrl() || !SCHED_OK) return null;
+  const today = new Date(), events = SCHED.filter(e=>!e.allDay && e.end>today && e.start<new Date(today.getFullYear(),today.getMonth(),today.getDate()+1)).sort((a,b)=>a.start-b.start);
+  const wins = freeWindows(today); const longest = wins.reduce((a,w)=>(!a||w.mins>a.mins)?w:a, null);
+  const slot = wins.find(w=>w.mins>=pl.minutes) || longest;
+  let items = pl.items, total = pl.total, minutes = pl.minutes, trimmed = false;
+  if(slot && slot.mins>=30 && minutes>slot.mins){
+    items = items.map(i=>({...i}));
+    const est = ()=>estimateMinutes(items.reduce((a,i)=>a+i.sets,0), items.length);
+    while(est()>slot.mins && items.length>1) items.pop();
+    if(est()>slot.mins) items.forEach(i=>{ i.sets = Math.min(i.sets,2); });
+    total = items.reduce((a,i)=>a+i.sets,0); minutes = est(); trimmed = true;
+  }
+  return {events, wins, slot, items, total, minutes, trimmed, noTime: !slot || slot.mins<30};
+}
+function renderCalStatus(msg){
+  const el = document.getElementById('calStatus'); if(!el) return;
+  const url = getCalUrl();
+  el.textContent = msg || (url ? (SCHED_OK ? `Connected. ${SCHED.filter(e=>!e.allDay).length} timed events in the next 7 days.` : (SCHED_ERR ? `Not connected: ${SCHED_ERR}` : 'Link saved. It loads when you open the Overview.')) : 'Not connected.');
+}
+document.addEventListener('click', async e=>{
+  if(e.target.id==='calSaveBtn'){
+    const v = (document.getElementById('calUrlInput').value||'').trim().replace(/^webcal:/i,'https:');
+    if(!/^https:\/\/calendar\.google\.com\/.+/i.test(v)){ renderCalStatus('That does not look like a Google Calendar link. It should start with https://calendar.google.com/calendar/ical/'); return; }
+    try{ localStorage.setItem(CAL_URL_KEY, v); localStorage.removeItem(CAL_CACHE_KEY); }catch(err){}
+    renderCalStatus('Checking...'); await fetchSchedule(true); schedTried = true; renderCalStatus();
+    if(SCHED_OK) document.getElementById('calUrlInput').value = '';
+    try{ renderTodayCard(); renderPlanCard(); }catch(err){}
+  }
+  if(e.target.id==='calOffBtn'){
+    try{ localStorage.removeItem(CAL_URL_KEY); localStorage.removeItem(CAL_CACHE_KEY); }catch(err){}
+    SCHED = []; SCHED_OK = false; SCHED_ERR = ''; schedTried = false; renderCalStatus();
+    try{ renderTodayCard(); renderPlanCard(); }catch(err){}
+  }
+});
+document.addEventListener('DOMContentLoaded', ()=>renderCalStatus());
+function renderTodayCard(){
+  const host = document.getElementById('todayCard'); if(!host) return;
+  if(!(DATA.sessions||[]).length){ host.style.display = 'none'; return; }
+  host.style.display = '';
+  const pl = planSession(), trained = DATA.sessions.some(s=>sameDay(s.date,new Date()));
+  if(pl.done){
+    host.innerHTML = `<p class="eyebrow">Today</p><p style="font-size:17px;font-weight:700;margin:0 0 6px;">Your muscles have hit their sweet spot this week.</p><p style="color:var(--dim);font-size:13.5px;margin:0;line-height:1.5;">Rest, run or do the mobility routine. Nothing is short.</p>`; return;
+  }
+  const cal = calendarForToday(pl);
+  const useItems = cal ? cal.items : pl.items, useTotal = cal ? cal.total : pl.total, useMin = cal ? cal.minutes : pl.minutes;
+  const calHtml = !cal ? '' : `<div style="margin:0 0 10px;padding:9px 12px;border-radius:12px;background:var(--surface-3);font-size:12.5px;line-height:1.5;color:var(--dim);">
+      <b style="color:var(--chalk);">Your day:</b> ${cal.events.length ? cal.events.slice(0,4).map(e=>`${e.title} ${fmtT(e.start)}–${fmtT(e.end)}`).join(' · ') : 'nothing booked.'}<br>
+      ${cal.noTime ? `<b style="color:var(--brass);">No free window left today.</b> Do this tomorrow, or run or do mobility instead.` : `<b style="color:var(--ember);">Best slot:</b> ${fmtT(cal.slot.start)}–${fmtT(cal.slot.end)} (${cal.slot.mins} min free).${cal.trimmed ? ` Trimmed to fit.` : ''}`}</div>`;
+  host.innerHTML = `<p class="eyebrow">${trained?'Trained today. Next up':'Today'}</p>
+    <p style="font-size:19px;font-weight:800;margin:0 0 4px;">${pl.group} day <span style="font-weight:500;color:var(--dim);font-size:14px;">· ${useTotal} sets · about ${useMin} min</span></p>
+    <p style="color:var(--dim);font-size:12.5px;margin:0 0 10px;line-height:1.45;">${pl.reasons.join(' ')}${pl.legsSkipped?` You ran ${pl.run.distanceKm.toFixed(1)} km ${sameDay(pl.run.date,new Date())?'today':'yesterday'}, so legs are skipped.`:''}</p>
+    ${calHtml}
+    ${useItems.map(it=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--hair);font-size:13.5px;"><span><b>${it.name}</b>${it.stretch?' <span style="color:var(--ember);font-size:10.5px;font-weight:700;">STRETCH</span>':''}</span><span class="num" style="color:var(--dim);white-space:nowrap;">${it.sets} × ${repRangeFor(it.name).join('–')}</span></div>`).join('')}
+    <button class="btn primary" id="planStart" style="width:100%;margin-top:12px;">Start this session</button>`;
+  document.getElementById('planStart').onclick = ()=>startPlannedSession(useItems);
+}
+function renderPlanCard(){
+  const host = document.getElementById('planCard'); if(!host) return;
+  const plan = getPlanDays(), ws = weekStartLocal(), t0 = new Date(); t0.setHours(0,0,0,0), sessions = DATA.sessions||[];
+  const days = Array.from({length:7},(_,i)=>{ const d = new Date(ws.getTime()+i*864e5); const dow = d.getDay();
+    const planned = plan.includes(dow), done = sessions.some(x=>sameDay(x.date,d)), today = sameDay(d,t0), past = d<t0;
+    return {d, dow, planned, done, today, past, missed: planned && past && !done}; });
+  const calOn = !!getCalUrl() && SCHED_OK;
+  const missed = days.filter(x=>x.missed), free = days.filter(x=>!x.past && !x.planned && !x.done && (!calOn || longestWindow(x.d)>=60));
+  const busyPlanned = calOn ? days.filter(x=>x.planned && !x.done && !x.past && longestWindow(x.d)<45) : [];
+  const doneN = days.filter(x=>x.planned && x.done).length;
+  let msg;
+  if(!plan.length) msg = 'Pick the days you will train. Fixed days work better than training when you feel like it.';
+  else if(missed.length) msg = `Missed ${(a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a[a.length-1]:a.join(''))(missed.map(x=>DOW_NAMES[x.dow]))}. ` + (free.length ? `Move ${missed.length>1?'them':'it'} to ${free.slice(0,missed.length).map(x=>DOW_NAMES[x.dow]).join(' or ')} to keep ${plan.length} sessions this week.` : 'No free days left this week. Start fresh on Monday.');
+  else { const next = days.find(x=>x.planned && !x.done && !x.past); msg = `${doneN} of ${plan.length} planned sessions done.` + (next ? ` Next: ${next.today?'today':DOW_NAMES[next.dow]}.` : ' All done for the week.'); }
+  if(busyPlanned.length) msg += ` Heads up: ${busyPlanned.map(x=>x.today?'today':DOW_NAMES[x.dow]).join(' and ')} ${busyPlanned.length>1?'are':'is'} very busy, so plan a short session or move ${busyPlanned.length>1?'them':'it'}.`;
+  const order = [1,2,3,4,5,6,0];
+  host.innerHTML = `<p class="eyebrow">Training plan</p>
+    <div style="display:flex;gap:5px;margin-bottom:10px;">${order.map(dow=>{ const x = days.find(y=>y.dow===dow);
+      const col = x.done ? 'var(--ember)' : (x.missed ? 'var(--alarm)' : (x.planned ? 'var(--chalk)' : 'var(--dim-2)'));
+      const mark = x.done ? '✓' : (x.missed ? '✗' : (x.planned ? '•' : '·'));
+      return `<button type="button" class="planDay" data-dow="${dow}" style="flex:1;padding:8px 0;border-radius:10px;border:1px solid ${x.planned?col:'var(--hair)'};background:${x.done?'rgba(255,90,44,.16)':'var(--surface-3)'};color:${col};font:inherit;font-size:11px;font-weight:700;cursor:pointer;${x.today?'outline:1.5px solid var(--chalk);':''}">${DOW_NAMES[dow]}<br><span style="font-size:15px;">${mark}</span></button>`; }).join('')}</div>
+    <p style="color:var(--dim);font-size:13px;margin:0;line-height:1.45;">${msg}</p>
+    <p style="color:var(--dim-2);font-size:11.5px;margin:6px 0 0;">Tap a day to plan or unplan it.</p>`;
+  host.querySelectorAll('.planDay').forEach(b=>b.onclick = ()=>{ const dow = parseInt(b.dataset.dow,10); let a = getPlanDays(); a = a.includes(dow) ? a.filter(x=>x!==dow) : a.concat(dow); setPlanDays(a); renderPlanCard(); try{ renderCalendarCard(); }catch(e){} });
+}
+// strength check: best estimated max in the last 3 weeks vs the best 4 to 10 weeks ago
+function strengthRetention(exerciseMap){
+  const now = Date.now(), items = [];
+  for(const [ex, occs] of exerciseMap){
+    if(occs.length < 4) continue;
+    let rec = 0, base = 0;
+    for(const o of occs){ const age = (now-o.date.getTime())/864e5; if(age<=21) rec = Math.max(rec,o.e1rm); else if(age>=28 && age<=70) base = Math.max(base,o.e1rm); }
+    if(rec>0 && base>0) items.push({ex, rec, base, pct:(rec-base)/base*100});
+  }
+  items.sort((a,b)=>a.pct-b.pct);
+  const slipping = items.filter(i=>i.pct<-5), up = items.filter(i=>i.pct>=2);
+  return {items, total:items.length, slipping, up, holding: items.length-slipping.length};
+}
+function renderRetCard(){
+  const host = document.getElementById('retCard'); if(!host) return;
+  const r = strengthRetention(DATA.exerciseMap||new Map());
+  if(r.total < 3){ host.innerHTML = `<p class="eyebrow">Strength check</p><p style="color:var(--dim);font-size:12.5px;margin:0;line-height:1.4;">Needs 3 lifts trained in the last 3 weeks and again a month or two ago. Keep logging and this will compare your lifts.</p>`; return; }
+  let perWeek = null; try{ const st = weightStats(weightTrendSeries(BW, 0.1), 14); if(st && st.perWeek!=null) perWeek = st.perWeek; }catch(e){}
+  const cutting = perWeek!=null && perWeek<=-0.2, share = r.slipping.length/r.total;
+  const verdict = share>=0.4 ? (cutting ? 'Strength is slipping while you cut. Add 150 to 250 kcal on training days or slow the loss.' : 'Several lifts are down on a month ago. Check sleep and consistency.')
+    : (cutting ? 'You are keeping your strength while losing weight. Keep cutting.' : 'Your strength is holding or rising.');
+  host.innerHTML = `<p class="eyebrow">Strength check <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim-2);">vs a month ago</span></p>
+    <div style="display:flex;gap:18px;margin-bottom:8px;"><div><div class="num" style="font-size:24px;font-weight:800;color:var(--ember);">${r.up.length}</div><div style="color:var(--dim);font-size:11.5px;">up</div></div>
+      <div><div class="num" style="font-size:24px;font-weight:800;">${r.total-r.slipping.length-r.up.length}</div><div style="color:var(--dim);font-size:11.5px;">holding</div></div>
+      <div><div class="num" style="font-size:24px;font-weight:800;color:${r.slipping.length?'var(--alarm)':'var(--dim-2)'};">${r.slipping.length}</div><div style="color:var(--dim);font-size:11.5px;">down 5%+</div></div></div>
+    <p style="font-size:13.5px;line-height:1.45;margin:0 0 ${r.slipping.length?8:0}px;color:var(--chalk);">${verdict}</p>
+    ${r.slipping.slice(0,4).map(i=>`<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;border-top:1px solid var(--hair);color:var(--dim);"><span>${i.ex}</span><span class="num" style="color:var(--alarm);">${i.pct.toFixed(0)}%</span></div>`).join('')}`;
+}
+// ---- live PR / beat-last-time banner while logging ----
+function updatePrLive(group){
+  const el = group.querySelector('.prLive'); if(!el) return;
+  if(group.dataset.bw==='1'){ el.textContent = ''; return; }
+  const name = effectiveExerciseName(group.dataset.exercise, group.dataset.grip);
+  const occs = DATA.exerciseMap && DATA.exerciseMap.get(name);
+  let msg = '';
+  if(occs && occs.length){
+    const bestE = Math.max(...occs.map(o=>o.e1rm)), lastTop = occs[occs.length-1].topSet;
+    let best = null;
+    group.querySelectorAll('.buildSetRow').forEach(row=>{
+      if(row.dataset.warmup==='1' || row.dataset.unilateral==='1') return;
+      const kg = parseFloat((row.querySelector('.singleFields .bsKg')||{}).value), reps = parseInt((row.querySelector('.singleFields .bsReps')||{}).value,10);
+      if(!(kg>0) || !(reps>0)) return;
+      const e = epley(kg, reps);
+      if(e > bestE*1.001) best = {t:'pr', kg, reps, e};
+      else if(!best && (kg>lastTop.kg || (kg===lastTop.kg && reps>lastTop.reps))) best = {t:'beat', kg, reps};
+    });
+    if(best && best.t==='pr') msg = `New best: ${fmtKg(best.kg)} × ${best.reps} is an estimated max of ${Math.round(best.e)} kg, up from ${Math.round(bestE)}.`;
+    else if(best) msg = `Beating last time (${fmtKg(lastTop.kg)} × ${lastTop.reps}).`;
+  }
+  if(el.dataset.msg !== msg){ el.dataset.msg = msg; el.textContent = msg; }
+}
+document.addEventListener('input', e=>{ const g = e.target.closest && e.target.closest('#buildForm .buildExGroup'); if(g) updatePrLive(g); });
+document.addEventListener('click', e=>{ if(e.target.closest && e.target.closest('#buildForm .setno')){ const g = e.target.closest('.buildExGroup'); if(g) setTimeout(()=>updatePrLive(g),0); } });
+function updateSessEst(){
+  const el = document.getElementById('sessEst'); if(!el) return;
+  const rows = Array.from(document.querySelectorAll('#buildForm .buildSetRow'));
+  if(!rows.length){ el.textContent = ''; return; }
+  const per = restStats(DATA.sessions||[]), rest = per.length ? per[per.length-1].avg : (restSecs||90);
+  const left = rows.filter(r=>r.dataset.done!=='1').length, elapsed = sessStart ? (Date.now()-sessStart)/1000 : 0;
+  const mins = Math.round((elapsed + left*(40+rest))/60);
+  el.textContent = `≈ ${mins} min total · ${rows.length} sets`;
+}
+// ---- heat view on the muscle diagram ----
+function heatStatuses(lastDays){
+  const out = {};
+  MUSCLE_ORDER.forEach(m=>{ const d = lastDays[m];
+    if(d==null) out[m] = {color:'var(--surface-3)', label:'Never trained'};
+    else if(d<=2) out[m] = {color:'var(--ember)', label:d===0?'Today':d+' day'+(d===1?'':'s')+' ago'};
+    else if(d<=5) out[m] = {color:'var(--brass)', label:d+' days ago'};
+    else out[m] = {color:'var(--alarm)', label:d+' days ago'}; });
+  return out;
+}
+function getMuscleView(){ try{ return localStorage.getItem('rr-mview')==='heat' ? 'heat' : 'sets'; }catch(e){ return 'sets'; } }
+
 function renderOverviewForPeriod(period){
   currentPeriod = period;
   const {sessions, binHistory} = DATA;
@@ -3537,6 +3843,8 @@ function renderOverviewForPeriod(period){
       <div class="chip${period==='year'?' active':''}" data-period="year">Year</div>
     </div>
 
+    <div class="card" id="todayCard"></div>
+    <div class="card" id="planCard"></div>
     ${fatigueBanner}
 
     <div class="card">
@@ -3554,6 +3862,7 @@ function renderOverviewForPeriod(period){
     </div>
 
     ${reviewCard}
+    <div class="card" id="retCard"></div>
 
     <div style="display:flex;gap:12px;">
       ${bwCard}
@@ -3600,6 +3909,7 @@ function renderOverviewForPeriod(period){
   renderMeasCard();
   renderRestCard();
   renderMobCard();
+  try{ renderTodayCard(); renderPlanCard(); renderRetCard(); ensureSchedule(); }catch(e){ console.error('assistant cards failed', e); }
 }
 
 function renderBWCard(bwChange, periodWord){
@@ -3808,6 +4118,9 @@ function renderCalendarCard(){
   const runDays = new Set(RUNS.filter(r=>r.date.getFullYear()===y && r.date.getMonth()===m).map(r=>r.date.getDate()));
   const cells = monthCells(y, m);
   const todayD = (now.getFullYear()===y && now.getMonth()===m) ? now.getDate() : -1;
+  const planDays = getPlanDays(), cT0 = new Date(); cT0.setHours(0,0,0,0);
+  const planCls = d=>{ if(liftDays.has(d) || !planDays.length) return ''; const dt = new Date(y,m,d); if(!planDays.includes(dt.getDay())) return '';
+    if(dt>=cT0) return ' plan'; return ((cT0-dt)/864e5<=28 && dt>=new Date(earliest.getFullYear(),earliest.getMonth(),earliest.getDate())) ? ' miss' : ''; };
   const rc = monthRecap(sessions, RUNS, y, m), pm = monthRecap(sessions, RUNS, m===0?y-1:y, m===0?11:m-1);
   const delta = (a,b,unit) => b>0 ? `<small style="display:block;text-align:right;color:var(--dim);font-weight:500;font-size:11px;">${a>=b?'+':'−'}${Math.abs(a-b).toLocaleString()}${unit} vs last month</small>` : '';
   host.innerHTML = `
@@ -3817,9 +4130,9 @@ function renderCalendarCard(){
     <div class="calGrid">
       ${['M','T','W','T','F','S','S'].map(d=>`<div class="calDow">${d}</div>`).join('')}
       ${cells.map(d=> d==null ? '<div class="calCell blank"></div>' :
-        `<${liftDays.has(d)?'button':'div'} class="calCell${liftDays.has(d)?' lift':''}${d===todayD?' today':''}" ${liftDays.has(d)?`data-day="${d}"`:''}>${d}<span class="dots">${liftDays.has(d)?'<i style="background:var(--ember)"></i>':''}${runDays.has(d)?'<i style="background:var(--brass)"></i>':''}</span></${liftDays.has(d)?'button':'div'}>`).join('')}
+        `<${liftDays.has(d)?'button':'div'} class="calCell${liftDays.has(d)?' lift':''}${d===todayD?' today':''}${planCls(d)}" ${liftDays.has(d)?`data-day="${d}"`:''}>${d}<span class="dots">${liftDays.has(d)?'<i style="background:var(--ember)"></i>':''}${runDays.has(d)?'<i style="background:var(--brass)"></i>':''}</span></${liftDays.has(d)?'button':'div'}>`).join('')}
     </div>
-    <div class="muscleLegend" style="margin-top:10px;"><span><span class="dot" style="background:var(--ember);"></span>Lifting</span><span><span class="dot" style="background:var(--brass);"></span>Run</span></div>
+    <div class="muscleLegend" style="margin-top:10px;"><span><span class="dot" style="background:var(--ember);"></span>Lifting</span><span><span class="dot" style="background:var(--brass);"></span>Run</span><span><span class="dot" style="background:transparent;box-shadow:inset 0 0 0 1.5px var(--ember);"></span>Planned</span><span><span class="dot" style="background:transparent;box-shadow:inset 0 0 0 1.5px var(--alarm);"></span>Missed</span></div>
     <div class="exBlock" style="margin-top:12px;">
       <p class="eyebrow">Month recap</p>
       <div class="exSetRow"><span class="l">Sessions</span><span class="r num">${rc.sessions}${delta(rc.sessions,pm.sessions,'')}</span></div>
@@ -4595,6 +4908,7 @@ function renderMuscles(offset){
   const canGoPrev = sessions[0].date < start;
 
   const statuses = {};
+  const mview = getMuscleView(), diagSt = mview==='heat' ? heatStatuses(muscleLastDays(sessions)) : statuses;
   MUSCLE_ORDER.forEach(m=> statuses[m] = statusFor(counts[m], LANDMARKS[m]));
 
   const zoneNote = (sets, lm)=>{
@@ -4642,12 +4956,17 @@ function renderMuscles(offset){
     ${focusCardHtml(periodMuscleStats(sessions, start, end))}
 
     <div class="card">
-      ${bodyDiagramSVG(statuses, counts)}
-      <div class="muscleLegend">
+      <div class="chipRow" style="justify-content:center;margin-bottom:10px;"><div class="chip mviewChip${mview==='sets'?' active':''}" data-mview="sets">Weekly sets</div><div class="chip mviewChip${mview==='heat'?' active':''}" data-mview="heat">Last trained</div></div>
+      ${bodyDiagramSVG(diagSt, counts)}
+      <div class="muscleLegend">${mview==='heat' ? `
+        <span><span class="dot" style="background:var(--ember);"></span>0 to 2 days</span>
+        <span><span class="dot" style="background:var(--brass);"></span>3 to 5 days</span>
+        <span><span class="dot" style="background:var(--alarm);"></span>6+ days</span>
+        <span><span class="dot" style="background:var(--surface-3);"></span>Never</span>` : `
         <span><span class="dot" style="background:var(--dim-2);"></span>Under MEV</span>
         <span><span class="dot" style="background:var(--ember);"></span>Growth zone</span>
         <span><span class="dot" style="background:var(--brass);"></span>High</span>
-        <span><span class="dot" style="background:var(--alarm);"></span>Over MRV</span>
+        <span><span class="dot" style="background:var(--alarm);"></span>Over MRV</span>`}
       </div>
       <details style="margin:0 2px 4px;"><summary style="font-size:12px;color:var(--ember);font-weight:700;cursor:pointer;">What do MEV, MAV and MRV mean?</summary>
         <div style="font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:6px;">
@@ -4673,10 +4992,14 @@ function renderMuscles(offset){
     ${unclassified.size ? `<p style="color:var(--dim-2);font-size:11.5px;margin-top:6px;">Not counted above (no muscle match): ${[...unclassified].join(', ')}.</p>` : ''}
     <p class="hint" style="color:var(--dim-2);font-size:11.5px;margin-top:14px;">MEV/MAV/MRV are commonly cited volume landmarks (Renaissance Periodization), not individually calibrated to you — treat them as a compass.</p>
   `;
+  document.querySelectorAll('#panel-muscles .mviewChip').forEach(c=>{
+    c.onclick = ()=>{ try{ localStorage.setItem('rr-mview', c.dataset.mview); }catch(e){} renderMuscles(offset); };
+  });
   document.querySelectorAll('#panel-muscles .bdm').forEach(el=>{
     el.addEventListener('click', ()=>{
       const m = el.dataset.m, lm = LANDMARKS[m], st = statuses[m]; if(!lm) return;
       document.querySelectorAll('#panel-muscles .bdm').forEach(x=>x.classList.toggle('sel', x.dataset.m===m));
+      if(mview==='heat'){ document.getElementById('bdReadout').innerHTML = `<b>${m}</b> \u00b7 last trained <span style="color:${diagSt[m].color};font-weight:700;">${diagSt[m].label.toLowerCase()}</span>`; return; }
       document.getElementById('bdReadout').innerHTML = `<b>${m}</b> \u00b7 ${Math.round(counts[m]*10)/10} sets \u00b7 <span style="color:${st.color};font-weight:700;">${st.label}</span><br><span style="font-size:11.5px;">MEV ${lm.mev} \u00b7 MAV ${lm.mav} \u00b7 MRV ${lm.mrv}</span>`;
       const row = document.getElementById('mrow_'+m);
       if(row){ row.scrollIntoView({behavior:'smooth', block:'center'}); row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); }

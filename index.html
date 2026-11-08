@@ -3258,10 +3258,10 @@ function diagnosePlateau(o){
       why:`Weekly distance grew faster than your recovery. Legs are usually hit first, but it drags upper body down too.`,
       actions:[`Make 1 to 2 runs easy this week (you can hold a conversation).`,`Cut leg sets by about a third for one week. Keep upper body as is.`,`Build distance by 10% a week from here, not 25%+.`]};
   }
-  if(cutting && ret && ret.total>=3 && ret.slipping.length/ret.total>=0.4){
+  if(cutting && ret && ret.total>=3 && ret.freqDrop>-0.3 && ret.real.length/ret.total>=0.4){
     return {kind:'cut-slipping', tone:'alarm',
       head:`Your lifts are dropping while you cut.`,
-      why:`${ret.slipping.length} of ${ret.total} main lifts are down more than 5% on a month ago (${ret.slipping.slice(0,3).map(x=>x.ex).join(', ')}). A small dip is normal in a deficit. This much suggests the deficit is too big.`,
+      why:`${ret.real.length} of ${ret.total} main lifts are down more than 5% on a month ago (${ret.real.slice(0,3).map(x=>x.ex).join(', ')}). A small dip is normal in a deficit. This much suggests the deficit is too big.`,
       actions:[`Add 150 to 250 kcal on training days, or slow the loss to about 0.5 kg a week.`,`Keep protein around 1.8 to 2.2 g per kg.`,`Keep training 3 days a week and re-check in 2 weeks.`]};
   }
   if(cutting){
@@ -3626,33 +3626,79 @@ function renderPlanCard(){
     <p style="color:var(--dim-2);font-size:11.5px;margin:6px 0 0;">Tap a day to plan or unplan it.</p>`;
   host.querySelectorAll('.planDay').forEach(b=>b.onclick = ()=>{ const dow = parseInt(b.dataset.dow,10); let a = getPlanDays(); a = a.includes(dow) ? a.filter(x=>x!==dow) : a.concat(dow); setPlanDays(a); renderPlanCard(); try{ renderCalendarCard(); }catch(e){} });
 }
-// strength check: best estimated max in the last 3 weeks vs the best 4 to 10 weeks ago
+// strength check: best estimated max in the last 3 weeks vs the best 4 to 10 weeks ago, with the likely cause
 function strengthRetention(exerciseMap){
-  const now = Date.now(), items = [];
+  const now = Date.now(), items = [], dayset = new Map();
+  const dk = d=>d.toISOString().slice(0,10);
+  for(const [ex, occs] of exerciseMap) for(const o of occs){ dayset.set(dk(o.date), 1); }
+  let recDays = 0, baseDays = 0;
+  for(const k of dayset.keys()){ const age = (now-new Date(k+'T12:00:00Z').getTime())/864e5; if(age<=21) recDays++; else if(age>=28 && age<=70) baseDays++; }
+  const recPerWk = recDays/3, basePerWk = baseDays/6.0;
+  const freqDrop = basePerWk>0 ? (recPerWk-basePerWk)/basePerWk : 0;
   for(const [ex, occs] of exerciseMap){
     if(occs.length < 4) continue;
-    let rec = 0, base = 0;
-    for(const o of occs){ const age = (now-o.date.getTime())/864e5; if(age<=21) rec = Math.max(rec,o.e1rm); else if(age>=28 && age<=70) base = Math.max(base,o.e1rm); }
-    if(rec>0 && base>0) items.push({ex, rec, base, pct:(rec-base)/base*100});
+    let rec = 0, base = 0, recN = 0, baseTop = null;
+    for(const o of occs){ const age = (now-o.date.getTime())/864e5;
+      if(age<=21){ rec = Math.max(rec,o.e1rm); recN++; }
+      else if(age>=28 && age<=70){ if(o.e1rm>base){ base = o.e1rm; baseTop = o.topSet; } } }
+    if(!(rec>0 && base>0)) continue;
+    const pct = (rec-base)/base*100;
+    // a drop this big is almost always a different variation, stack or single-arm version logged under one name
+    const variation = pct <= -35;
+    // one session is too thin to call a trend
+    const thin = recN < 2;
+    const kg = baseTop && baseTop.kg ? Math.round(baseTop.kg*0.92/2.5)*2.5 : null;
+    items.push({ex, rec, base, pct, recN, variation, thin, restartKg: kg});
   }
   items.sort((a,b)=>a.pct-b.pct);
   const slipping = items.filter(i=>i.pct<-5), up = items.filter(i=>i.pct>=2);
-  return {items, total:items.length, slipping, up, holding: items.length-slipping.length};
+  const real = slipping.filter(i=>!i.variation && !i.thin);
+  const suspect = slipping.filter(i=>i.variation);
+  const thin = slipping.filter(i=>!i.variation && i.thin);
+  return {items, total:items.length, slipping, up, holding: items.length-slipping.length, real, suspect, thin, recDays, baseDays, recPerWk, basePerWk, freqDrop};
 }
 function renderRetCard(){
   const host = document.getElementById('retCard'); if(!host) return;
   const r = strengthRetention(DATA.exerciseMap||new Map());
   if(r.total < 3){ host.innerHTML = `<p class="eyebrow">Strength check</p><p style="color:var(--dim);font-size:12.5px;margin:0;line-height:1.4;">Needs 3 lifts trained in the last 3 weeks and again a month or two ago. Keep logging and this will compare your lifts.</p>`; return; }
   let perWeek = null; try{ const st = weightStats(weightTrendSeries(BW, 0.1), 14); if(st && st.perWeek!=null) perWeek = st.perWeek; }catch(e){}
-  const cutting = perWeek!=null && perWeek<=-0.2, share = r.slipping.length/r.total;
-  const verdict = share>=0.4 ? (cutting ? 'Strength is slipping while you cut. Add 150 to 250 kcal on training days or slow the loss.' : 'Several lifts are down on a month ago. Check sleep and consistency.')
-    : (cutting ? 'You are keeping your strength while losing weight. Keep cutting.' : 'Your strength is holding or rising.');
+  const cutting = perWeek!=null && perWeek<=-0.2;
+  // bodyweight context: average of the last 3 weeks vs 4 to 10 weeks ago
+  let bwTxt = '';
+  try{ const nowMs = Date.now(); const avg = a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+    const rb = avg(BW.filter(b=>(nowMs-b.date.getTime())/864e5<=21).map(b=>b.kg)), bb = avg(BW.filter(b=>{const g=(nowMs-b.date.getTime())/864e5; return g>=28&&g<=70;}).map(b=>b.kg));
+    if(rb!=null && bb!=null){ const d = rb-bb; bwTxt = Math.abs(d)<0.8 ? `Bodyweight is steady (${rb.toFixed(1)} kg vs ${bb.toFixed(1)} kg), so weight is not the cause.` : `Bodyweight ${d<0?'fell':'rose'} ${Math.abs(d).toFixed(1)} kg. That explains roughly ${Math.abs(d/bb*100).toFixed(0)}% at most, not more.`; } }catch(e){}
+  const share = r.real.length/r.total;
+  const fewDays = r.freqDrop <= -0.3;
+  const fmt = n=>n.toFixed(1).replace('.0','');
+  let head, why = [], acts = [];
+  if(fewDays){
+    head = `You trained ${fmt(r.recPerWk)} days a week, down from ${fmt(r.basePerWk)}. That is the cause.`;
+    why.push(`Lifts need repeat exposure. With ${r.recDays} sessions in 3 weeks against ${r.baseDays} in the 6 weeks before, most "drops" are detraining, not lost muscle.`);
+    acts.push(`Train 3 fixed days a week for the next 4 weeks. This fixes most of it.`);
+    acts.push(`Do not chase old weights. Restart each dropped lift at about 92% of its old weight (shown below) and add reps first.`);
+  } else if(share>=0.4){
+    head = cutting ? `Lifts are slipping while you cut, and your training days are steady.` : `Lifts are down even though you are training as often.`;
+    why.push(cutting ? `Frequency is not the issue, so look at the deficit. A small dip is normal, this much is not.` : `Frequency is not the issue, so look at recovery: sleep, food and how hard the sets are.`);
+    acts.push(cutting ? `Add 150 to 250 kcal on training days or slow the loss to about 0.5 kg a week. Keep protein 1.8 to 2.2 g per kg.` : `Sleep 7.5 hours or more for 2 weeks and keep sets at RPE 7 to 8, not to failure.`);
+    acts.push(`Re-check in 2 weeks. If still down, take one easy week.`);
+  } else {
+    head = cutting ? (r.real.length ? `Mostly holding while you cut. ${r.real.length} lift${r.real.length>1?'s':''} to fix.` : 'You are keeping your strength while losing weight.') : (r.real.length ? `Mostly holding. ${r.real.length} lift${r.real.length>1?'s':''} to fix.` : 'Your strength is holding or rising.');
+    if(r.real.length) acts.push(`Hit ${r.real.slice(0,2).map(i=>i.ex).join(' and ')} twice this week before changing anything else.`);
+  }
+  if(r.suspect.length) acts.push(`${r.suspect.map(i=>i.ex).join(', ')} fell over 35%. That is almost always a different variation or stack under the same name. Rename it if you changed it, otherwise ignore it.`);
+  if(bwTxt) why.push(bwTxt);
+  const rows = r.real.slice(0,5).map(i=>`<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0;border-top:1px solid var(--hair);color:var(--dim);"><span>${i.ex}${i.restartKg?` <span style="color:var(--dim-2);">restart ~${i.restartKg} kg</span>`:''}</span><span class="num" style="color:var(--alarm);">${i.pct.toFixed(0)}%</span></div>`).join('');
+  const thinTxt = r.thin.length ? `<p style="color:var(--dim-2);font-size:11.5px;margin:6px 0 0;">${r.thin.length} more dipped but were only trained once recently, so they are not counted.</p>` : '';
   host.innerHTML = `<p class="eyebrow">Strength check <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim-2);">vs a month ago</span></p>
     <div style="display:flex;gap:18px;margin-bottom:8px;"><div><div class="num" style="font-size:24px;font-weight:800;color:var(--ember);">${r.up.length}</div><div style="color:var(--dim);font-size:11.5px;">up</div></div>
       <div><div class="num" style="font-size:24px;font-weight:800;">${r.total-r.slipping.length-r.up.length}</div><div style="color:var(--dim);font-size:11.5px;">holding</div></div>
-      <div><div class="num" style="font-size:24px;font-weight:800;color:${r.slipping.length?'var(--alarm)':'var(--dim-2)'};">${r.slipping.length}</div><div style="color:var(--dim);font-size:11.5px;">down 5%+</div></div></div>
-    <p style="font-size:13.5px;line-height:1.45;margin:0 0 ${r.slipping.length?8:0}px;color:var(--chalk);">${verdict}</p>
-    ${r.slipping.slice(0,4).map(i=>`<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;border-top:1px solid var(--hair);color:var(--dim);"><span>${i.ex}</span><span class="num" style="color:var(--alarm);">${i.pct.toFixed(0)}%</span></div>`).join('')}`;
+      <div><div class="num" style="font-size:24px;font-weight:800;color:${r.real.length?'var(--alarm)':'var(--dim-2)'};">${r.real.length}</div><div style="color:var(--dim);font-size:11.5px;">really down</div></div>
+      <div><div class="num" style="font-size:24px;font-weight:800;color:var(--dim-2);">${r.slipping.length-r.real.length}</div><div style="color:var(--dim);font-size:11.5px;">unclear</div></div></div>
+    <p style="font-size:14px;font-weight:700;line-height:1.35;margin:0 0 6px;color:var(--chalk);">${head}</p>
+    ${why.map(w=>`<p style="font-size:13px;line-height:1.45;margin:0 0 6px;color:var(--dim);">${w}</p>`).join('')}
+    <ol style="margin:4px 0 8px;padding-left:18px;font-size:13px;line-height:1.45;color:var(--chalk);">${acts.map(a=>`<li style="margin-bottom:3px;">${a}</li>`).join('')}</ol>
+    ${rows}${thinTxt}`;
 }
 // ---- live PR / beat-last-time banner while logging ----
 function updatePrLive(group){
